@@ -55,7 +55,7 @@ public class StartWebSocketServer {
 			}else if (arg.equals("--ssl")){
 				//SSL
 				SocketConfig.isSSL = true;
-			}else if (arg.startsWith("--keystorePwd=")){
+			}else if (arg.startsWith("keystorePwd=")){
 				//Java key-store password - TODO: maybe not the best way to load the pwd ...
 				SocketConfig.keystorePwd = arg.replaceFirst(".*?=", "").trim();
 			}
@@ -144,6 +144,8 @@ public class StartWebSocketServer {
 															SocketConfig.apiVersion, SocketConfig.localName, SocketConfig.localSecret));
         post("/createChannel", (request, response) -> 	createChannel(request, response));
         post("/joinChannel", (request, response) -> 	joinChannel(request, response));
+        //TODO:
+        //getChannel, getAllChannels, getChannelData, deleteChannel
         
         //set access-control headers to enable CORS
 		if (SocketConfig.allowCORS){
@@ -245,4 +247,5 @@ public class StartWebSocketServer {
     	JSONObject msgJSON = JSON.make("result", "fail", "error", "not yet implemented");
     	return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
     }
+
 }
