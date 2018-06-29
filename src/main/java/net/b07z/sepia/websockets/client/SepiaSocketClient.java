@@ -4,6 +4,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -47,6 +48,8 @@ public class SepiaSocketClient implements SocketClient{
 	private boolean storeChannelUserLists = false;
 	private Map<String, JSONArray> channelUserLists = new ConcurrentHashMap<>();
 	private long timeOfLastAction = 0;
+	private AtomicInteger activeThreads = new AtomicInteger(0);
+	private int maxThreadsRegistered = 0;
 	//
 	
     private CountDownLatch connectLatch;
@@ -90,6 +93,31 @@ public class SepiaSocketClient implements SocketClient{
         
     	connectLatch = new CountDownLatch(1);
         closeLatch = new CountDownLatch(1);
+    }
+    
+    /**
+     * How many threads are active?
+     */
+    @Override
+    public int getActiveThreads(){
+    	return activeThreads.get();
+    }
+    /**
+     * How many threads were active at max?
+     */
+    @Override
+    public int getMaxRegisteredThreads(){
+    	return maxThreadsRegistered;
+    }
+    /**
+     * Get statistics about this socket client in readable form (HTML formatted).
+     */
+    @Override
+    public String getStats(){
+    	return("" +
+    		"Active threads now: " + getActiveThreads() + "<br>" + 
+    		"Max. active threads: " + getMaxRegisteredThreads() + "<br>"
+    	);
     }
     
     //------ programmable message analysis ------
@@ -147,9 +175,11 @@ public class SepiaSocketClient implements SocketClient{
     
     //-------------------------------------------
 
+    @Override
     public boolean awaitConnection(long wait) throws InterruptedException{
         return connectLatch.await(wait, TimeUnit.MILLISECONDS);
     }
+    @Override
     public boolean awaitClose(long wait) throws InterruptedException{
         return closeLatch.await(wait, TimeUnit.MILLISECONDS);
     }
@@ -195,81 +225,87 @@ public class SepiaSocketClient implements SocketClient{
     @OnWebSocketMessage
     public void onMessage(String msg){
     	timeOfLastAction = System.currentTimeMillis();
-    	try {
-			SocketMessage message = SocketMessage.importJSON(msg);
-			String msgId = message.msgId;
-			String channelId = message.channelId;
-			//System.out.println(message.getJSON()); 		//debug
-			
-			//update stuff from server
-			if (message.sender.equalsIgnoreCase(SocketConfig.SERVERNAME)){
-				if (storeChannelUserLists && message.userList != null && !message.userList.isEmpty() && channelId != null && !channelId.isEmpty()){
-					channelUserLists.put(channelId, message.userList);
-					log.info("WEBSOCKET-CLIENT: Updated userList of channel '" + channelId + "': " + message.userList.toString());
+    	Thread thread = new Thread(() -> {
+    		int activeT = activeThreads.incrementAndGet();
+    		if (activeT > maxThreadsRegistered) maxThreadsRegistered = activeT;
+	    	try {
+				SocketMessage message = SocketMessage.importJSON(msg);
+				String msgId = message.msgId;
+				String channelId = message.channelId;
+				//System.out.println(message.getJSON()); 		//debug
+				
+				//update stuff from server
+				if (message.sender.equalsIgnoreCase(SocketConfig.SERVERNAME)){
+					if (storeChannelUserLists && message.userList != null && !message.userList.isEmpty() && channelId != null && !channelId.isEmpty()){
+						channelUserLists.put(channelId, message.userList);
+						log.info("WEBSOCKET-CLIENT: Updated userList of channel '" + channelId + "': " + message.userList.toString());
+					}
 				}
-			}
-			
-			//data (note: sending data to a specific receiver will also send it back to you, is that OK?) 
-			if (message.data != null){
-				String dataType = (String) message.data.get("dataType");
-				//only credentials?
-				if (dataType == null){
-					//Note: handled in the final interface implementation (in the overwritten methods replyToMessage, ...)?
-					//System.out.println("WEBSOCKET-CLIENT: Got data without comment: " + message.data.toJSONString());
 				
-				}else if (dataType.equals(DataType.directCmd.name()) || dataType.equals(DataType.assistAnswer.name())){
-					//Note: handled in the final interface implementation (in the overwritten methods replyToMessage, ...)?
+				//data (note: sending data to a specific receiver will also send it back to you, is that OK?) 
+				if (message.data != null){
+					String dataType = (String) message.data.get("dataType");
+					//only credentials?
+					if (dataType == null){
+						//Note: handled in the final interface implementation (in the overwritten methods replyToMessage, ...)?
+						//System.out.println("WEBSOCKET-CLIENT: Got data without comment: " + message.data.toJSONString());
 					
-				//data: authentication
-				}else if (dataType.equals(DataType.authenticate.name())){
-					//set credentials
-					JSONObject data = JSON.make("dataType", DataType.authenticate.name());
-					if (credentials != null && !credentials.isEmpty()){
-						username = (String) credentials.get("userId");
-						JSON.add(data, "credentials", credentials);
-					}
-					//set parameters
-					if (clientParameters != null && !clientParameters.isEmpty()){
-						JSON.add(data, "parameters", clientParameters);
-					}
-					log.info("WEBSOCKET-CLIENT: Authenticating user: '" + username + "'"); 		//debug
+					}else if (dataType.equals(DataType.directCmd.name()) || dataType.equals(DataType.assistAnswer.name())){
+						//Note: handled in the final interface implementation (in the overwritten methods replyToMessage, ...)?
+						
+					//data: authentication
+					}else if (dataType.equals(DataType.authenticate.name())){
+						//set credentials
+						JSONObject data = JSON.make("dataType", DataType.authenticate.name());
+						if (credentials != null && !credentials.isEmpty()){
+							username = (String) credentials.get("userId");
+							JSON.add(data, "credentials", credentials);
+						}
+						//set parameters
+						if (clientParameters != null && !clientParameters.isEmpty()){
+							JSON.add(data, "parameters", clientParameters);
+						}
+						log.info("WEBSOCKET-CLIENT: Authenticating user: '" + username + "'"); 		//debug
+						
+						SocketMessage msgUserName = new SocketMessage("", username, SocketConfig.SERVERNAME, data);
+						if (msgId != null) msgUserName.setMessageId(msgId);
+						boolean msgSent = sendMessage(msgUserName, 3000);
+						if (!msgSent){
+							//TODO: now what?
+						}
 					
-					SocketMessage msgUserName = new SocketMessage("", username, SocketConfig.SERVERNAME, data);
-					if (msgId != null) msgUserName.setMessageId(msgId);
-					boolean msgSent = sendMessage(msgUserName, 3000);
-					if (!msgSent){
-						//TODO: now what?
+					}else if (dataType.equals(DataType.joinChannel.name())){
+						activeChannel = (String) message.data.get("channelId");
+						givenName = (String) message.data.get("givenName");
+						joinedChannel(activeChannel, givenName);
+					
+					}else if (dataType.equals(DataType.welcome.name())){
+						welcomeToChannel(channelId);
 					}
-				
-				}else if (dataType.equals(DataType.joinChannel.name())){
-					activeChannel = (String) message.data.get("channelId");
-					givenName = (String) message.data.get("givenName");
-					joinedChannel(activeChannel, givenName);
-				
-				}else if (dataType.equals(DataType.welcome.name())){
-					welcomeToChannel(channelId);
 				}
-			}
-
-			//message not from myself and server - like a user chats with assistant
-			if (!message.sender.equalsIgnoreCase(username) && !message.sender.equalsIgnoreCase(SocketConfig.SERVERNAME.toLowerCase())){
-				//send reply to personal message
-				if (message.receiver != null && message.receiver.toLowerCase().equals(username)){
-					replyToMessage(message);
-					
-				//send comment to chat?
+	
+				//message not from myself and server - like a user chats with assistant
+				if (!message.sender.equalsIgnoreCase(username) && !message.sender.equalsIgnoreCase(SocketConfig.SERVERNAME.toLowerCase())){
+					//send reply to personal message
+					if (message.receiver != null && message.receiver.toLowerCase().equals(username)){
+						replyToMessage(message);
+						
+					//send comment to chat?
+					}else{
+						commentChat(message);
+					}
+	
+				//message from server - like server status message
 				}else{
-					commentChat(message);
+					checkStatusMessage(message);
 				}
-
-			//message from server - like server status message
-			}else{
-				checkStatusMessage(message);
+				
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+	    	activeThreads.decrementAndGet();
+    	});
+    	thread.start();
     }
     
     @Override
@@ -323,6 +359,7 @@ public class SepiaSocketClient implements SocketClient{
 		storeChannelUserLists = doIt;
 	}
     
+    @Override
     public String getActiveChannel(){
     	return activeChannel;
     }
