@@ -21,6 +21,7 @@ public class SocketConfig {
 	public static String localName = "sepia-websocket-server";			//**user defined local server name
 	public static String localSecret = "123456";						//**user defined secret to validate local server
 	public static final String apiVersion = "v2.0.0";
+	public static String privacyPolicyLink = "";						//Link to privacy policy
 	
 	public static final boolean allowCORS = true;
 	public static final int IDLE_TIMEOUT = 1000*60*60*4;
@@ -67,6 +68,8 @@ public class SocketConfig {
 			localSecret = settings.getProperty("server_local_secret");
 			clusterKey = settings.getProperty("cluster_key");
 			allowInternalCalls = Boolean.valueOf(settings.getProperty("allow_internal_calls"));
+			//policies
+			privacyPolicyLink =  settings.getProperty("privacy_policy");
 			//assistant
 			//systemAssistantId = settings.getProperty("systemAssistantId");
 			

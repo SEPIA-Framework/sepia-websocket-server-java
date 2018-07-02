@@ -13,6 +13,19 @@ import net.b07z.sepia.websockets.common.SocketMessage;
 public interface SocketClient {
 	
 	/**
+	 * How many threads are active for data processing right now?
+	 */
+	public int getActiveThreads();
+	/**
+	 * How many threads were active at the same time at most?
+	 */
+	public int getMaxRegisteredThreads();
+	/**
+	 * Get some user readable statistics about this socket client (formatted in HTML).
+	 */
+	public String getStats();
+	
+	/**
 	 * Wait a certain time for connection. 
 	 * @param wait - maximum wait time in ms
 	 * @return true for connection, false for timeout

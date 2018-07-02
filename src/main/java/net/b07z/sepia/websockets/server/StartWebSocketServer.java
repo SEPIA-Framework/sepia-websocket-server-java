@@ -85,14 +85,15 @@ public class StartWebSocketServer {
 		coreToolsConfig = JSON.make(
 				"defaultAssistAPI", SocketConfig.assistAPI,
 				"defaultTeachAPI", SocketConfig.teachAPI,
-				"clusterKey", SocketConfig.clusterKey
+				"clusterKey", SocketConfig.clusterKey,
+				"privacyPolicy", SocketConfig.privacyPolicyLink
 		);
 		ConfigDefaults.setupCoreTools(coreToolsConfig);
 		//part 2
 		long clusterTic = Timer.tic();
 		JSONObject assistApiClusterData = ConfigDefaults.getAssistantClusterData();
 		if (assistApiClusterData == null){
-			new RuntimeException("Core-tools are NOT set properly! AssistAPI could not be reached!");
+			throw new RuntimeException("Core-tools are NOT set properly! AssistAPI could not be reached!");
 		}else{
 			log.info("Received cluster-data from AssistAPI after " + Timer.toc(clusterTic) + "ms");
 		}
@@ -105,7 +106,7 @@ public class StartWebSocketServer {
 		
 		//Check core-tools settings
 		if (!ConfigDefaults.areCoreToolsSet()){
-			new RuntimeException("Core-tools are NOT set properly!");
+			throw new RuntimeException("Core-tools are NOT set properly!");
 		}else{
 			String assistantName = JSON.getString(assistApiClusterData, "assistantName");
 			Debugger.println("Expecting assistant: " + assistantName + " (id: " + ConfigDefaults.defaultAssistantUserId + ")", 3);
