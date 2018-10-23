@@ -135,10 +135,10 @@ public class StartWebSocketServer {
         SocketServer server = new SepiaSocketHandler();
         AbstractSocketHandler.server = server;
         
-        webSocket("/messages", AbstractSocketHandler.class);
+        webSocket("/messages/", AbstractSocketHandler.class); 		//NOTE: it HAS TO end with "/"
         webSocketIdleTimeoutMillis(SocketConfig.IDLE_TIMEOUT);
-        
         //init(); //only needed when no REST end-points follow
+        
         get("/online", (request, response) -> 			CoreEndpoints.onlineCheck(request, response));
 		get("/ping", (request, response) -> 			CoreEndpoints.ping(request, response, SocketConfig.SERVERNAME));
 		get("/validate", (request, response) -> 		CoreEndpoints.validateServer(request, response,	SocketConfig.SERVERNAME, 
