@@ -208,6 +208,12 @@ public class SepiaSocketHandler implements SocketServer {
 						){
 					preBroadcastAction(user, msg, false, false, false);
 					broadcastMessage(msg);
+					
+				//error broadcast
+				}else if (dataType.equals(DataType.errorMessage.name())){
+					msg.textType = TextType.status.name(); 			//force status text
+					preBroadcastAction(user, msg, false, false, false);
+					broadcastMessage(msg);
 				
 				//broadcast default welcome and byebye
 				/* -- has been disabled, for now only server is allowed to send it --

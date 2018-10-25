@@ -35,7 +35,7 @@ public class SocketMessage {
 		assistAnswer,		//has data for assistant communication
 		directCmd,			//has a direct cmd for assistant
 		remoteAction,		//has a remote action like ASR trigger or hotkey submit
-		errorMessage		//tbd
+		errorMessage		//combined with TextType.status this message will be displayed as error line in channel (ignores normal status msg settings)
 	}
 	public static enum SenderType{
 		user,
