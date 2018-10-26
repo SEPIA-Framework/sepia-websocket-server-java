@@ -1,6 +1,7 @@
 package net.b07z.sepia.websockets.client;
 import java.net.URI;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -41,8 +42,9 @@ public class SocketClientHandler
 		if (SocketConfig.isSSL){													
 			SslContextFactory sslContextFactory = new SslContextFactory();
 		    sslContextFactory.setKeyStorePath("Xtensions/SSL/ssl-keystore.jks");
-		    sslContextFactory.setKeyStorePassword(SocketConfig.keystorePwd); 		
-		    client = new WebSocketClient(sslContextFactory);
+		    sslContextFactory.setKeyStorePassword(SocketConfig.keystorePwd);
+		    client = new WebSocketClient(new HttpClient(sslContextFactory));
+		    //replaced for sparkjava: client = new WebSocketClient(sslContextFactory);
 		}else{
 			client = new WebSocketClient();
 		}
