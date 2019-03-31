@@ -157,20 +157,31 @@ public class SepiaSocketHandler implements SocketServer {
 			}else if (channelId.equals("<auto>")){
 				//get active channel
 				if (user != null){
-					channelId = user.getActiveChannel();
-					channelAccepted = true;
-					//check this channel here or assume that all "active channels" really exist and the user is allowed to use it?
+					//do we have a user that can be in any channel? Then get the receiver active channel
+					if (user.isOmnipresent()){
+						SocketUser rec = SocketUserPool.getActiveUserById(msg.receiver);
+						if (rec != null){
+							channelId = rec.getActiveChannel(); //TODO: does it sense to broadcast this to all users with this ID not only active?
+							msg.channelId = channelId;			//refresh
+							channelAccepted = true;
+						}
+					}else{
+						channelId = user.getActiveChannel();	//Note: I wonder what happens when the user is the assistant that is active in all channels?
+						msg.channelId = channelId;				//refresh
+						//check this channel here or assume that all "active channels" really exist and the user is allowed to use it?
+						channelAccepted = true;
+					}
 				}
 			}else{
 				//validate channel - TODO: this procedure has potential to fail when channel operations are not in sync with user, I'm sure, I think, maybe ... ^^ 
 				//user must exists if a message should be sent to channel
 				if (user != null){
-					sc = SocketChannelPool.getChannel(channelId);
+					SocketChannel testSc = SocketChannelPool.getChannel(channelId);
 					//channel exists?
-					if (sc != null){
+					if (testSc != null){
 						//user is active in this channel?
 						if (!user.getActiveChannel().equals(channelId)){
-							if (sc.isUserMemberOfChannel(user)){
+							if (testSc.isUserMemberOfChannel(user)){
 								//user.setActiveChannel(channelId); 		//do this here?
 								channelAccepted = true;
 							}
@@ -203,7 +214,8 @@ public class SepiaSocketHandler implements SocketServer {
 				//simply broadcast
 				if (dataType == null 
 						|| dataType.equals(DataType.openText.name())
-						|| dataType.equals(DataType.assistAnswer.name()) 
+						|| dataType.equals(DataType.assistAnswer.name())
+						|| dataType.equals(DataType.assistFollowUp.name())
 						|| dataType.equals(DataType.directCmd.name())
 						){
 					preBroadcastAction(user, msg, false, false, false);
@@ -522,7 +534,7 @@ public class SepiaSocketHandler implements SocketServer {
     //Sends message to all active users of a certain channel - message assumes channelId was checked before
     @Override
     public void broadcastMessage(SocketMessage msg, String channelId){
-    	//TODO: check channel "<auto>"
+    	//TODO: check channel "<auto>" again? - should have been replaced in channel-check at start ...
     	SocketChannel sc = SocketChannelPool.getChannel(channelId);
     	List<SocketUser> activeChannelUsers = sc.getActiveMembers(false); 		//TODO: this one is tricky, for normal messages it should be "false" 
     	broadcastMessage(msg, activeChannelUsers);
