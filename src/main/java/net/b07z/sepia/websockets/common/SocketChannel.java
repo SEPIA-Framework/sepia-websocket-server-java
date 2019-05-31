@@ -5,7 +5,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+
 import net.b07z.sepia.server.core.server.ConfigDefaults;
+import net.b07z.sepia.server.core.tools.JSON;
 
 /**
  * This class represents a default private channel on the webSocketServer for registered users.
@@ -15,6 +19,17 @@ import net.b07z.sepia.server.core.server.ConfigDefaults;
  */
 public class SocketChannel {
 	
+	//Some fixed channel IDs (don't allow users to create them!)
+	public static final String OPEN_WORLD = "openWorld";
+	public static final String INFO = "info";
+	public static final String UNKNOWN = "unknown";
+	public static final List<String> systemChannels = new ArrayList<>();
+	static {
+		systemChannels.add(OPEN_WORLD);
+		systemChannels.add(INFO);
+		systemChannels.add(UNKNOWN);
+	}
+	
 	private String channelId;		//name of the channel
 	private String channelKey;		//password to access channel
 	
@@ -22,12 +37,37 @@ public class SocketChannel {
 	private boolean isOpen = false;
 	private Set<String> members;	//users allowed to be in this channel
 	
+	/**
+	 * Create new channel
+	 * @param id - unique channel ID
+	 * @param key - security key
+	 * @param owner - channel owner (user ID)
+	 */
 	public SocketChannel(String id, String key, String owner){
 		this.channelId = id;
 		this.channelKey = key;
+		this.owner = owner;
 		this.members = new ConcurrentSkipListSet<String>();
 		if (key.equals("open")){
 			this.isOpen = true;
+			this.members.add(ConfigDefaults.defaultAssistantUserId);
+		}
+	}
+	/**
+	 * Import channel data from JSON object previously generated with {@link #getJson()}.
+	 */
+	public SocketChannel(JSONObject channelJson){
+		this.channelId = JSON.getString(channelJson, "channel_id");
+		this.channelKey = JSON.getString(channelJson, "channel_key");
+		this.isOpen = JSON.getBoolean(channelJson, "public");
+		this.owner = JSON.getString(channelJson, "owner");
+		this.members = new ConcurrentSkipListSet<String>();
+		JSONArray membersArray = JSON.getJArray(channelJson, "members");
+		for (Object o : membersArray){
+			this.members.add(o.toString());
+		}
+		if (this.isOpen){
+			//might already be in members but just to make sure ...
 			this.members.add(ConfigDefaults.defaultAssistantUserId);
 		}
 	}
@@ -120,5 +160,23 @@ public class SocketChannel {
 	public boolean isUserMemberOfChannel(SocketUser user){
 		return members.contains(user.getUserId());
 		//return getAllMembers().contains(user);
+	}
+	
+	/**
+	 * Get channel data as JSON object.
+	 */
+	public JSONObject getJson(){
+		JSONObject channel = new JSONObject();
+		JSON.put(channel, "channel_id", channelId);
+		JSON.put(channel, "channel_key", channelKey);
+		JSON.put(channel, "owner", owner);
+		JSON.put(channel, "public", isOpen);
+		JSON.put(channel, "members", members.toArray());
+		/*
+		JSON.put(channel, "channel_name", "");				//not yet implemented
+		JSON.put(channel, "assistants", new JSONArray());	//not yet implemented
+		JSON.put(channel, "info", new JSONObject());		//not yet implemented
+		*/
+		return channel;
 	}
 }
