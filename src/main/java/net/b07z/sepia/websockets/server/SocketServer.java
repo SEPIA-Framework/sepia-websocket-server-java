@@ -3,8 +3,6 @@ package net.b07z.sepia.websockets.server;
 import java.util.Collection;
 
 import org.eclipse.jetty.websocket.api.Session;
-import org.json.simple.JSONObject;
-
 import net.b07z.sepia.websockets.common.SocketMessage;
 import net.b07z.sepia.websockets.common.SocketUser;
 
@@ -25,13 +23,11 @@ public interface SocketServer {
 	/**
 	 * This method automatically selects the users that shall receive the message (collection, channel, session?).
 	 */
-	public void broadcastMessage(SocketMessage msg);
+	public void broadcastMessage(SocketUser source, SocketMessage msg);
 	
 	public void broadcastMessage(SocketMessage msg, String channelId);
 	
 	public void broadcastMessage(SocketMessage msg, Session session);
-	
-	public void broadcastMessage(JSONObject msg, Session session);
 	
 	//--- user handling ---
     
