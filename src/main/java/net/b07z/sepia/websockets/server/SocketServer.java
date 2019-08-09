@@ -16,6 +16,8 @@ public interface SocketServer {
 	
 	public void onMessage(Session userSession, String message);
 	
+	public void onError(Session userSession, Throwable error);
+	
 	//--- broadcasting ---
 	
 	public long getLastBroadcastTime();

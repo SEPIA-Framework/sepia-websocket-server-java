@@ -105,6 +105,11 @@ public interface SocketClient {
 	public String getUserId();
 	
 	/**
+	 * Get deviceId or null if never sent by client.
+	 */
+	public String getDeviceId();
+	
+	/**
 	 * Get active session.
 	 */
 	public Session getSession();

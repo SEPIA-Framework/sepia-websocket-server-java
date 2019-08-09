@@ -37,7 +37,8 @@ public class SepiaSocketBroadcaster {
      * @param addActiveChannelUsersList
      */
     public static SocketMessage makeServerStatusMessage(String msgId, String channelId, String text, DataType dataType, boolean addActiveChannelUsersList){
-    	SocketMessage msg = new SocketMessage(channelId, SocketConfig.SERVERNAME, "", text, TextType.status.name());
+    	SocketMessage msg = new SocketMessage(channelId, SocketConfig.SERVERNAME, SocketConfig.localName, "", "", 
+    			text, TextType.status.name());
 		if (dataType != null) 					msg.addData("dataType", dataType.name());
         if (msgId != null && !msgId.isEmpty()) 	msg.setMessageId(msgId);
 		if (addActiveChannelUsersList){
@@ -89,11 +90,15 @@ public class SepiaSocketBroadcaster {
 	    		&& user != null && !user.getUserId().isEmpty()){
 	    		
 				//this might be a bit costly, but for now we deactivate all users that are active with the same id in the same channel
-				List<SocketUser> deactivatedUsers = SocketUserPool.setUsersWithSameIdInactive(user.getUserId(), user.getUserSession(), user.getActiveChannel());
+				List<SocketUser> deactivatedUsers = SocketUserPool.setUsersWithSameIdInactive(user);
 				//and just in case the current user-session was inactive:
 				user.setActive();
 				//inform the inactive sessions
-		        SocketMessage msgStatusUpdate = makeServerStatusMessage("", user.getActiveChannel(), "Your session is now inactive in channel (" + user.getActiveChannel() + ") until you send a message", DataType.byebye, true);
+		        SocketMessage msgStatusUpdate = makeServerStatusMessage(
+		        		"", user.getActiveChannel(), 
+		        		"Your session is now inactive in channel (" + user.getActiveChannel() + ") until you send a message", 
+		        		DataType.byebye, true
+		        );
 		        broadcastMessageToSocketUsers(msgStatusUpdate, deactivatedUsers);
 	    	}
     	}
@@ -126,10 +131,6 @@ public class SepiaSocketBroadcaster {
     public static void broadcastMessageToSocketUsers(SocketMessage msg, Collection<SocketUser> userList){
     	//to all users
     	if (msg.receiver == null || msg.receiver.isEmpty()){
-    		//make 2 messages, one safe one with credentials
-    		JSONObject fullMsg = msg.getJSON();
-    		JSONObject safeMsg = makeSafeMessage(msg);
-    		
     		//old code: getAllUsers().stream().filter(Session::isOpen).forEach(session -> {
     		for (SocketUser su : userList){
     			//System.out.println("(1) Broadcast from " + msg.sender + " to " + su.getUserId() + " with role " + su.getUserRole());	//debug
@@ -137,15 +138,19 @@ public class SepiaSocketBroadcaster {
     			if (!su.getUserSession().isOpen()){
     				SocketUserPool.removeUser(su);
     			}else{
+    				//make message safe if receiver is not trusty
 	    			if (!isTrustyReceiver(su)){
 	    				//filter some stuff like prevent slash-command repost
-	    				if (msg.text != null && msg.text.matches("(\\w+ |^)saythis .*")){
+	    				if (msg.text != null && msg.text.matches("(\\w+ |^)saythis .*")){ 		
+	    					//TODO: what about the other slash-commands?? (linkshare, http(s|), ...)
 	    					return;
 	    				}
 	    				//don't send credentials when the receiver is not an assistant (or another trustworthy receiver)
+	    				JSONObject safeMsg = makeSafeMessage(msg);
 	    				//System.out.println("(1) Send safe data: " + safeMsg);		//debug
 	    				broadcastNow(safeMsg, su.getUserSession());
 	    			}else{
+	    				JSONObject fullMsg = msg.getJSON();
 	    				//System.out.println("(1) Send unsafe data: " + fullMsg);		//debug
 	    				broadcastNow(fullMsg, su.getUserSession());
 	    			}
@@ -158,9 +163,25 @@ public class SepiaSocketBroadcaster {
     	
     	//to single user
     	}else{
-    		//System.out.println("(2) Broadcast from " + msg.sender);		//debug
-    		userList.stream().filter(u -> (u.getUserId().equalsIgnoreCase(msg.receiver) || u.getUserId().equalsIgnoreCase(msg.sender))).forEach(u -> {
-    			//System.out.println("(2) to: " + u.getUserId());		//debug
+    		System.out.println("(2) Broadcast from " + msg.sender);		//debug
+    		
+    		System.out.println("msg.receiver: " + msg.receiver);
+			System.out.println("msg.receiverDeviceId: " + msg.receiverDeviceId);
+			System.out.println("msg.sender: " + msg.sender);
+			System.out.println("msg.senderDeviceId: " + msg.senderDeviceId);
+			
+    		userList.stream().filter(u -> {
+    			
+    			System.out.println("filter userId: " + u.getUserId());
+    			System.out.println("filter deviceId: " + u.getDeviceId());
+    			
+    			boolean isReceiver = u.getUserId().equalsIgnoreCase(msg.receiver) 
+    					&& (!SocketConfig.distinguishUsersByDeviceId || u.getDeviceId().equalsIgnoreCase(msg.receiverDeviceId));
+    			boolean isSender = u.getUserId().equalsIgnoreCase(msg.sender)
+    					&& (!SocketConfig.distinguishUsersByDeviceId || u.getDeviceId().equalsIgnoreCase(msg.senderDeviceId));
+    			return (isReceiver || isSender);
+    		}).forEach(u -> {
+    			System.out.println("(2) to: " + u.getUserId() + ", " + u.getDeviceId());		//debug
     			//will check receiver AND sender:
     			if (!u.getUserSession().isOpen()){
     				SocketUserPool.removeUser(u);

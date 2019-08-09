@@ -18,7 +18,7 @@ public class SocketConfig {
 	//Server
 	public static int PORT = 20723;
 	public static final String SERVERNAME = "SEPIA-Websocket-Server"; 	//this is to identify the server (in client as well)
-	public static String localName = "sepia-websocket-server";			//**user defined local server name
+	public static String localName = "sepia-websocket-server";			//**user defined local server name (works as server device ID as well)
 	public static String localSecret = "123456";						//**user defined secret to validate local server
 	public static final String apiVersion = "v1.2.0";
 	public static String privacyPolicyLink = "";						//Link to privacy policy
@@ -44,6 +44,8 @@ public class SocketConfig {
 	public static String keystorePwd = "13371337";
 	public static final String authenticationModule = ConfigDefaults.defaultAuthModule;
 	
+	//General chat settings
+	public static boolean distinguishUsersByDeviceId = true;		//allow 2 users with same ID to be active when device ID is different?
 	
 	//----------helpers----------
 	

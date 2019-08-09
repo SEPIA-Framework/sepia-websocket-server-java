@@ -39,12 +39,14 @@ public class SocketUser {
 	 * @param id - unique userId
 	 * @param name - name chosen by user (account settings)
 	 * @param role - role given to user by system (account entry)
+	 * @param deviceId - client device ID
 	 */
-	public SocketUser(Session session, String id, String name, Role role){
+	public SocketUser(Session session, String id, String name, Role role, String deviceId){
 		this.userSession = session;
 		this.userId = id;
 		this.userName = name;
 		this.role = role;
+		this.deviceId = deviceId;
 		this.sessionId = nextSessionId.incrementAndGet();
 	}
 	

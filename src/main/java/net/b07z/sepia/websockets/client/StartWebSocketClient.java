@@ -11,8 +11,15 @@ public class StartWebSocketClient
 {
     public static void main(String[] args)
     {
-    	JSONObject credentials = JSON.make("userId", "enterValidId", "pwd", "enterValidPassword");
-        SocketClient mySocket = new SepiaSocketClient(credentials);
+    	JSONObject credentials = JSON.make(
+    			SepiaSocketClient.CREDENTIALS_USER_ID, "enterValidId", 
+    			SepiaSocketClient.CREDENTIALS_PASSWORD, "enterValidPassword"
+    	);
+    	JSONObject parameters = JSON.make(
+				SepiaSocketClient.PARAMETERS_CLIENT, "enterClientInfo",
+				SepiaSocketClient.PARAMETERS_DEVICE_ID, "enterDeviceId"
+		);
+        SocketClient mySocket = new SepiaSocketClient(credentials, parameters);
         SocketClientHandler mySocketHandler = new SocketClientHandler(mySocket);
         mySocketHandler.tryReconnect = true;
         mySocketHandler.connect();

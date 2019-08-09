@@ -81,15 +81,20 @@ public class SocketMessage {
 	 * This is a simple text message with a certain textType (e.g. chat or status). 
 	 * @param channelId - server channel 
 	 * @param sender - who sends it
+	 * @param senderDeviceId - device ID of sender
 	 * @param receiver - who shall receive it (empty for all)
+	 * @param receiverDeviceId - device ID of receiver (leave empty if unknown)
 	 * @param text - plain text
 	 * @param textType - type of text (e.g. chat or status)
 	 */
-	public SocketMessage(String channelId, String sender, String receiver, String text, String textType){
+	public SocketMessage(String channelId, String sender, String senderDeviceId, String receiver, String receiverDeviceId,
+			String text, String textType){
 		id = idPool.incrementAndGet();	if (id > (Long.MAX_VALUE - 1000)) idPool.set(Long.MIN_VALUE);
 		this.channelId = channelId;
 		this.sender = sender;
+		this.senderDeviceId = senderDeviceId;
 		this.receiver = receiver;
+		this.receiverDeviceId = receiverDeviceId;
 		this.text = text;
 		this.textType = textType;
 		
@@ -98,35 +103,22 @@ public class SocketMessage {
 	}
 	/**
 	 * Create a message that can be sent over the webSocket connection.<br>
-	 * This is a message formatted as HTML code. 
-	 * @param channelId - server channel
-	 * @param sender - who sends it
-	 * @param receiver - who shall receive it (empty for all)
-	 * @param html - HTML formatted message
-	 */
-	public SocketMessage(String channelId, String sender, String receiver, String html){
-		id = idPool.incrementAndGet();	if (id > (Long.MAX_VALUE - 1000)) idPool.set(Long.MIN_VALUE);
-		this.channelId = channelId;
-		this.sender = sender;
-		this.receiver = receiver;
-		this.html = html;
-				
-		this.timeStampUNIX = System.currentTimeMillis();
-		this.timeStampHHmmss = new SimpleDateFormat("HH:mm:ss").format(new Date());
-	}
-	/**
-	 * Create a message that can be sent over the webSocket connection.<br>
 	 * This is a message that uses a JSON object to submit data. 
 	 * @param channelId - server channel
 	 * @param sender - who sends it
+	 * @param senderDeviceId - device ID of sender
 	 * @param receiver - who shall receive it (empty for all)
+	 * @param receiverDeviceId - device ID of receiver (leave empty if unknown)
 	 * @param data - JSONObject data block
 	 */
-	public SocketMessage(String channelId, String sender, String receiver, JSONObject data){
+	public SocketMessage(String channelId, String sender, String senderDeviceId, String receiver, String receiverDeviceId,
+			JSONObject data){
 		id = idPool.incrementAndGet();	if (id > (Long.MAX_VALUE - 1000)) idPool.set(Long.MIN_VALUE);
 		this.channelId = channelId;
 		this.sender = sender;
+		this.senderDeviceId = senderDeviceId;
 		this.receiver = receiver;
+		this.receiverDeviceId = receiverDeviceId;
 		this.data = data;
 				
 		this.timeStampUNIX = System.currentTimeMillis();
@@ -152,15 +144,15 @@ public class SocketMessage {
 		id = idPool.incrementAndGet();	if (id > (Long.MAX_VALUE - 1000)) idPool.set(Long.MIN_VALUE);
 		this.channelId = channelId;
 		this.sender = sender;
+		this.senderDeviceId = senderDeviceId;
 		this.receiver = receiver;
+		this.receiverDeviceId = receiverDeviceId;
 		this.text = text;
 		this.textType = textType;
 		this.html = html;
 		this.data = data;
 		this.clientType = clientType;
 		this.userList = userList;
-		this.senderDeviceId = senderDeviceId;
-		this.receiverDeviceId = receiverDeviceId;
 		
 		this.timeStampUNIX = System.currentTimeMillis();
 		this.timeStampHHmmss = new SimpleDateFormat("HH:mm:ss").format(new Date());

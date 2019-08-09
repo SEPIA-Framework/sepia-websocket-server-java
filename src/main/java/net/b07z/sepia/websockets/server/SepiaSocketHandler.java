@@ -43,7 +43,7 @@ public class SepiaSocketHandler implements SocketServer {
         //send authentication request back to user
         JSONObject data = new JSONObject();
         JSON.add(data, "dataType", DataType.authenticate.name());
-        SocketMessage msg = new SocketMessage("", SocketConfig.SERVERNAME, "", data);
+        SocketMessage msg = new SocketMessage("", SocketConfig.SERVERNAME, SocketConfig.localName, "", "", data);
         broadcastMessage(msg, userSession);
     }
 
@@ -52,7 +52,9 @@ public class SepiaSocketHandler implements SocketServer {
     	SocketUser user = getUserBySession(userSession);
     	if (user != null){
     		removeUser(user);
-    		SocketMessage msgListUpdate = SepiaSocketBroadcaster.makeServerStatusMessage("", user.getActiveChannel(), (user.getUserName() + " (" + user.getUserId() + ") left the chat"), DataType.byebye, true);
+    		SocketMessage msgListUpdate = SepiaSocketBroadcaster.makeServerStatusMessage(
+    				"", user.getActiveChannel(), (user.getUserName() + " (" + user.getUserId() + ") left the chat"), DataType.byebye, true
+    		);
     		broadcastMessage(user, msgListUpdate);
     	
     	}else{
@@ -60,10 +62,16 @@ public class SepiaSocketHandler implements SocketServer {
     		SocketUserPool.removePendingSession(userSession);
     	}
     }
+    
+    //Error
+    public void onError(Session userSession, Throwable error) {
+    	log.error("SepiaSocketHandler reported: " + error.getMessage());
+    	//TODO: implement
+    }
 
     //Message
     public void onMessage(Session userSession, String message) {
-    	//System.out.println(message); 		//DEBUG
+    	System.out.println(message); 		//DEBUG
     	SocketMessage msg;
 		try {
 			msg = SocketMessage.importJSON(message);

@@ -77,7 +77,9 @@ public class SepiaChannelJoinHandler implements ServerMessageHandler {
 				        JSON.add(data, "channelId", nsc.getChannelId());
 				        JSON.add(data, "givenName", user.getUserName());
 
-				        SocketMessage msgJoinChannel = new SocketMessage("", SocketConfig.SERVERNAME, user.getUserId(), data);
+				        SocketMessage msgJoinChannel = new SocketMessage("", SocketConfig.SERVERNAME, SocketConfig.localName, 
+				        		user.getUserId(), user.getDeviceId(), 
+				        		data);
 				        //TODO: add channel users here? UI is usually expecting that ... but then it comes twice
 				        msgJoinChannel.setUserList(SocketChannelPool.getChannel(nsc.getChannelId()).getActiveMembers(true));
 				        if (msg.msgId != null) msgJoinChannel.setMessageId(msg.msgId);

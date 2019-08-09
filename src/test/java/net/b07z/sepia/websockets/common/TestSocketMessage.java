@@ -12,11 +12,13 @@ public class TestSocketMessage {
 	public static void main(String[] args) {
 		
 		Map<String, SocketUser> userIdMap = new ConcurrentHashMap<>();
-		userIdMap.put("aId", new SocketUser(null, "aId", "aName", Role.user));
-		userIdMap.put("bId", new SocketUser(null, "bId", "bName", Role.user));
-		userIdMap.put("cId", new SocketUser(null, "cId", "cName", Role.assistant));
+		userIdMap.put("aId", new SocketUser(null, "aId", "aName", Role.user, "d1"));
+		userIdMap.put("bId", new SocketUser(null, "bId", "bName", Role.user, "d2"));
+		userIdMap.put("cId", new SocketUser(null, "cId", "cName", Role.assistant, "assi1"));
 		
-		SocketMessage msg = new SocketMessage("channel1", SocketConfig.SERVERNAME, "aId", "test message", "");
+		SocketMessage msg = new SocketMessage("channel1", SocketConfig.SERVERNAME, SocketConfig.localName, 
+				"aId", "d1",
+				"test message", "");
     	msg.html = BuildHTML.getMessageFromSender(SocketConfig.SERVERNAME, "test message");
     	msg.setUserList(userIdMap.values());
     	

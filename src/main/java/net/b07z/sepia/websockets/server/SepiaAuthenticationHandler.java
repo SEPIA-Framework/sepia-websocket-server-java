@@ -12,6 +12,7 @@ import net.b07z.sepia.server.core.server.RequestPostParameters;
 import net.b07z.sepia.server.core.tools.Is;
 import net.b07z.sepia.server.core.tools.JSON;
 import net.b07z.sepia.server.core.users.Account;
+import net.b07z.sepia.websockets.client.SepiaSocketClient;
 import net.b07z.sepia.websockets.common.SocketChannel;
 import net.b07z.sepia.websockets.common.SocketChannelPool;
 import net.b07z.sepia.websockets.common.SocketConfig;
@@ -46,11 +47,11 @@ public class SepiaAuthenticationHandler implements ServerMessageHandler {
 			//----- build auth. request ----
 	    	JSONObject parameters = (JSONObject) msg.data.get("parameters");
 	    	if (parameters != null && !parameters.isEmpty()){
-		    	JSON.put(parameters, "KEY", credentials.get("userId") + ";" + credentials.get("pwd"));
+		    	JSON.put(parameters, SepiaSocketClient.CREDENTIALS_KEY, credentials.get(SepiaSocketClient.CREDENTIALS_USER_ID) + ";" + credentials.get(SepiaSocketClient.CREDENTIALS_PASSWORD));
 	    	}else{
 	    		parameters = JSON.make(
-	    			"KEY", credentials.get("userId") + ";" + credentials.get("pwd"),
-	    			"client", ConfigDefaults.defaultClientInfo
+	    			SepiaSocketClient.CREDENTIALS_KEY, credentials.get(SepiaSocketClient.CREDENTIALS_USER_ID) + ";" + credentials.get(SepiaSocketClient.CREDENTIALS_PASSWORD),
+	    			SepiaSocketClient.PARAMETERS_CLIENT, ConfigDefaults.defaultClientInfo
 	    		);
 	    	}
 	    	RequestParameters params = new RequestPostParameters(parameters);
@@ -63,7 +64,7 @@ public class SepiaAuthenticationHandler implements ServerMessageHandler {
 				//is assistant, thing or user? - we can add more here if required
 				String userId = userAccount.getUserID();
 				String deviceId = Is.notNullOrEmpty(msg.senderDeviceId)? 
-						msg.senderDeviceId : ((Is.notNullOrEmpty(parameters))? JSON.getString(parameters, "device_id") : null); 
+						msg.senderDeviceId : ((Is.notNullOrEmpty(parameters))? JSON.getString(parameters, SepiaSocketClient.PARAMETERS_DEVICE_ID) : null); 
 				if (Is.nullOrEmpty(deviceId)){
 					deviceId = (String) msg.data.get("deviceId");		//Some clients might use this "extra" entry
 				}
@@ -80,8 +81,8 @@ public class SepiaAuthenticationHandler implements ServerMessageHandler {
 				
 				//CREATE and STORE SocketUser
 				String acceptedName = userAccount.getUserNameShort();
-				SocketUser participant = new SocketUser(userSession, userId, acceptedName, role);
-				participant.setDeviceId(deviceId);
+				SocketUser participant = new SocketUser(userSession, userId, acceptedName, role, deviceId);
+				//participant.setDeviceId(deviceId);
 				server.storeUser(participant);
 				participant.setAuthenticated();
 				
@@ -114,22 +115,28 @@ public class SepiaAuthenticationHandler implements ServerMessageHandler {
 		        JSON.add(data, "channelId", sc.getChannelId());
 		        JSON.add(data, "givenName", acceptedName);
 
-		        SocketMessage msgUserName = new SocketMessage(channelId, SocketConfig.SERVERNAME, userId, data);
+		        SocketMessage msgUserName = new SocketMessage(channelId, SocketConfig.SERVERNAME, SocketConfig.localName, userId, deviceId, data);
 		        if (msg.msgId != null) msgUserName.setMessageId(msg.msgId);
 		        server.broadcastMessage(msgUserName, userSession);
 
 		        //broadcast channel welcome and update userList to whole channel
-		        SocketMessage msgListUpdate = SepiaSocketBroadcaster.makeServerStatusMessage("", channelId, (acceptedName + " (" + userId + ") joined the chat"), DataType.welcome, true);
+		        SocketMessage msgListUpdate = SepiaSocketBroadcaster.makeServerStatusMessage(
+		        		"", channelId, (acceptedName + " (" + userId + ") joined the chat"), DataType.welcome, true
+		        );
 		        server.broadcastMessage(participant, msgListUpdate);
 			
 			//AUTH. FAIL
 			}else{
-				SocketMessage msgLoginError = SepiaSocketBroadcaster.makeServerStatusMessage(msg.msgId, "<auto>", "Login failed, credentials wrong or assistant not reachable", DataType.errorMessage, false);
+				SocketMessage msgLoginError = SepiaSocketBroadcaster.makeServerStatusMessage(
+						msg.msgId, "<auto>", "Login failed, credentials wrong or assistant not reachable", DataType.errorMessage, false
+				);
 				server.broadcastMessage(msgLoginError, userSession);
 			}
 		//AUTH. missing credentials to try
 		}else{
-			SocketMessage msgLoginError = SepiaSocketBroadcaster.makeServerStatusMessage(msg.msgId, "<auto>", "Login failed, missing credentials", DataType.errorMessage, false);
+			SocketMessage msgLoginError = SepiaSocketBroadcaster.makeServerStatusMessage(
+					msg.msgId, "<auto>", "Login failed, missing credentials", DataType.errorMessage, false
+			);
 			server.broadcastMessage(msgLoginError, userSession);
 		}
 	}

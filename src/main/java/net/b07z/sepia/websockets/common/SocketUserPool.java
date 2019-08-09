@@ -77,16 +77,23 @@ public class SocketUserPool {
 		}
 	}
 	/**
-	 * Deactivated all users with this id.
+	 * Deactivated all users that are identical (same user ID, same device ID, same channel ID).
 	 */
-	public static List<SocketUser> setUsersWithSameIdInactive(String id, Session excludeSession, String userChannel){
-		List<SocketUser> allUsers = getAllUsersById(id);
+	public static List<SocketUser> setUsersWithSameIdInactive(SocketUser user){
+		String userId = user.getUserId();
+		Session excludeSession = user.getUserSession();
+		String userChannel = user.getActiveChannel();
+		String deviceId = user.getDeviceId();
+		
+		List<SocketUser> allUsers = getAllUsersById(userId);
 		List<SocketUser> deactivatedUsers = new ArrayList<>();
+		
 		for (SocketUser su : allUsers){
 			boolean isExcludeSession = (excludeSession != null)? (su.getUserSession().equals(excludeSession)) : false;
 			if (!isExcludeSession){
-				boolean isConflictChannel = (userChannel != null)? (su.getActiveChannel().equals(userChannel)) : true;
-				if (isConflictChannel && su.isActive()){
+				boolean isConflictChannel = (userChannel != null)? (su.getActiveChannel().equalsIgnoreCase(userChannel)) : true;
+				boolean isSameDeviceId = (deviceId != null)? su.getDeviceId().equalsIgnoreCase(deviceId) : false;
+				if (isConflictChannel && (isSameDeviceId || !SocketConfig.distinguishUsersByDeviceId) && su.isActive()){
 					su.setInactive();
 					deactivatedUsers.add(su);
 				}

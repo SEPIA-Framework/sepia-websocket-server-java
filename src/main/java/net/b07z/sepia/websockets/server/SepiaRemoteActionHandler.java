@@ -31,6 +31,7 @@ public class SepiaRemoteActionHandler implements ServerMessageHandler {
 	@Override
 	public void handle(Session userSession, SocketMessage msg) throws Exception {
 		String remoteUserId = (String) msg.data.get("user");
+		String targetDeviceId = (String) msg.data.get("targetDeviceId"); 	//TODO: can be "<auto>"
 		String remoteMsgType = (String) msg.data.get("type");
 		String action = (String) msg.data.get("action");
 		//channelId, deviceId ...
@@ -40,8 +41,11 @@ public class SepiaRemoteActionHandler implements ServerMessageHandler {
 		String receiver = remoteUserId;		//currently remote actions can only be sent to the user who triggered them
 		
 		String channelId = msg.channelId; 		//NOTE: this can be modified by parent message handler, e.g. <auto> -> specific channel
-		SocketMessage remoteMsg = new SocketMessage(channelId, SocketConfig.SERVERNAME, receiver, 
-				(remoteUserId + " sent remoteAction: " + remoteMsgType), TextType.status.name());
+		SocketMessage remoteMsg = new SocketMessage(channelId, 
+				SocketConfig.SERVERNAME, SocketConfig.localName, 		//TODO: change this to msg.sender, msg.senderDeviceId ?? Or do we need this for auth. ?? 
+				receiver, targetDeviceId,
+				(remoteUserId + " sent remoteAction: " + remoteMsgType), TextType.status.name()
+		);
 		remoteMsg.data = JSON.make("user", remoteUserId, "type", remoteMsgType, "action", action,
 				"dataType", DataType.remoteAction.name());
 		//remoteMsg.setUserList(getUserList());
