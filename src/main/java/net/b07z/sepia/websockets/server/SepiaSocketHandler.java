@@ -267,13 +267,13 @@ public class SepiaSocketHandler implements SocketServer {
     //Sends message to all active users of a certain channel - message assumes channelId was checked before
     @Override
     public void broadcastMessage(SocketMessage msg, String channelId){
-    	SepiaSocketBroadcaster.broadcastMessage(msg, channelId);
+    	SepiaSocketBroadcaster.broadcastMessageToChannel(msg, channelId);
     }
     //sends a message to user of given session
     @Override
     public void broadcastMessage(SocketMessage msg, Session session) {
         SepiaSocketBroadcaster.preBroadcastAction(getUserBySession(session), true, false, false);
-    	SepiaSocketBroadcaster.broadcastMessage(msg, session);
+    	SepiaSocketBroadcaster.broadcastMessageToSession(msg, session);
     }
     
     @Override

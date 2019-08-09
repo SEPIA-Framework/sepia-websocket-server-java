@@ -62,7 +62,8 @@ public class SepiaAuthenticationHandler implements ServerMessageHandler {
 				
 				//is assistant, thing or user? - we can add more here if required
 				String userId = userAccount.getUserID();
-				String deviceId = (Is.notNullOrEmpty(parameters))? JSON.getString(parameters, "device_id") : null; 
+				String deviceId = Is.notNullOrEmpty(msg.senderDeviceId)? 
+						msg.senderDeviceId : ((Is.notNullOrEmpty(parameters))? JSON.getString(parameters, "device_id") : null); 
 				if (Is.nullOrEmpty(deviceId)){
 					deviceId = (String) msg.data.get("deviceId");		//Some clients might use this "extra" entry
 				}

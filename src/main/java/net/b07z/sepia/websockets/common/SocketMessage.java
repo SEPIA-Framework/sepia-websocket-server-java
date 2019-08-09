@@ -59,7 +59,9 @@ public class SocketMessage {
 	
 	public String sender;
 	public String senderType;
+	public String senderDeviceId = "";		//sender/receiver, channel and device ID together build a unique path when a user is logged in with multiple devices
 	public String receiver;
+	public String receiverDeviceId = "";	//compare: senderDeviceId
 	public String clientType;
 	
 	public long timeStampUNIX;
@@ -142,8 +144,11 @@ public class SocketMessage {
 	 * @param data - JSONObject data block (optional)
 	 * @param clientType - type of the client that sends/sent the message (optional)
 	 * @param userList - list of users (optional)
+	 * @param senderDeviceId - device ID of sender
+	 * @param receiverDeviceId - device ID of receiver
 	 */
-	public SocketMessage(String channelId, String sender, String receiver, String text, String textType, String html, JSONObject data, String clientType, JSONArray userList){
+	public SocketMessage(String channelId, String sender, String receiver, String text, String textType, String html, JSONObject data, 
+			String clientType, JSONArray userList, String senderDeviceId, String receiverDeviceId){
 		id = idPool.incrementAndGet();	if (id > (Long.MAX_VALUE - 1000)) idPool.set(Long.MIN_VALUE);
 		this.channelId = channelId;
 		this.sender = sender;
@@ -154,6 +159,8 @@ public class SocketMessage {
 		this.data = data;
 		this.clientType = clientType;
 		this.userList = userList;
+		this.senderDeviceId = senderDeviceId;
+		this.receiverDeviceId = receiverDeviceId;
 		
 		this.timeStampUNIX = System.currentTimeMillis();
 		this.timeStampHHmmss = new SimpleDateFormat("HH:mm:ss").format(new Date());
@@ -194,6 +201,13 @@ public class SocketMessage {
 		this.channelId = channelId;
 	}
 	
+	public void setSenderDeviceId(String senderDeviceId){
+		this.senderDeviceId = senderDeviceId;
+	}
+	public void setReceiverDeviceId(String receiverDeviceId){
+		this.receiverDeviceId = receiverDeviceId;
+	}
+	
 	/**
 	 * Add data if data exists otherwise create data.
 	 * @param key - field in data
@@ -204,6 +218,20 @@ public class SocketMessage {
 			this.data = new JSONObject(); 
 		}
 		JSON.add(this.data, key, value);
+	}
+	
+	/**
+	 * Get the value of data.parameters[key] as string or null if not found.
+	 * @param key - key in data.parameters
+	 * @return value or null
+	 */
+	public String getDataParameterAsString(String key){
+		if (this.data != null){
+			if (this.data.containsKey("parameters")){
+				return JSON.getString((JSONObject) this.data.get("parameters"), key);
+			}
+		}
+		return null;
 	}
 	
 	public long getId(){
@@ -219,10 +247,12 @@ public class SocketMessage {
 		message.put("msgId", msgId);
 		message.put("channelId", channelId);
 		message.put("sender", sender);
+		if (senderDeviceId != null && !senderDeviceId.isEmpty()) message.put("senderDeviceId", senderDeviceId);
 		if (senderType != null && !senderType.isEmpty()) message.put("senderType", senderType);
 		message.put("timeUNIX", timeStampUNIX);
 		message.put("time", timeStampHHmmss);
 		if (receiver != null && !receiver.isEmpty()) message.put("receiver", receiver);
+		if (receiverDeviceId != null && !receiverDeviceId.isEmpty()) message.put("receiverDeviceId", receiverDeviceId);
 		if (text != null && !text.isEmpty()) message.put("text", text);
 		if (textType != null && !textType.isEmpty()) message.put("textType", textType);
 		if (html != null && !html.isEmpty()) message.put("html", html);
@@ -247,7 +277,9 @@ public class SocketMessage {
 		imported.channelId = (String) msgJson.get("channelId");
 		imported.sender = (String) msgJson.get("sender"); 			//will be overwritten during broadcast to all to make sure the client cannot fake it
 		imported.senderType = (String) msgJson.get("senderType");	//TODO: can be faked, do we care? Type server will be prohibited though
+		imported.senderDeviceId = (String) msgJson.get("senderDeviceId");
 		imported.receiver = (String) msgJson.get("receiver");
+		imported.receiverDeviceId = (String) msgJson.get("receiverDeviceId");
 		imported.timeStampUNIX = (long) msgJson.get("timeUNIX");
 		imported.timeStampHHmmss = (String) msgJson.get("time");
 		if (imported.timeStampHHmmss == null){

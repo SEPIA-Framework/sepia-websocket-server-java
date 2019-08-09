@@ -94,7 +94,7 @@ public class SepiaSocketBroadcaster {
 				user.setActive();
 				//inform the inactive sessions
 		        SocketMessage msgStatusUpdate = makeServerStatusMessage("", user.getActiveChannel(), "Your session is now inactive in channel (" + user.getActiveChannel() + ") until you send a message", DataType.byebye, true);
-		        broadcastMessage(msgStatusUpdate, deactivatedUsers);
+		        broadcastMessageToSocketUsers(msgStatusUpdate, deactivatedUsers);
 	    	}
     	}
     }
@@ -102,10 +102,10 @@ public class SepiaSocketBroadcaster {
     //Sends message to automatically selected list of users
     public static void broadcastMessage(SocketMessage msg){
     	if (msg.userListCollection != null){
-    		broadcastMessage(msg, msg.userListCollection);
+    		broadcastMessageToSocketUsers(msg, msg.userListCollection);
     	
     	}else if (msg.channelId != null && !msg.channelId.isEmpty()){
-    		broadcastMessage(msg, msg.channelId);
+    		broadcastMessageToChannel(msg, msg.channelId);
     	
     	}else if (msg.receiver != null && !msg.receiver.isEmpty()){
     		//TODO: no channel, no session, no collection ... probably better to prevent that this message is sent at all because the user can't block it yet!
@@ -113,15 +113,17 @@ public class SepiaSocketBroadcaster {
     		//broadcastMessage(msg, SocketUserPool.getAllUsersById(msg.receiver));
     	}
     }
+    
     //Sends message to all active users of a certain channel - message assumes channelId was checked before
-    public static void broadcastMessage(SocketMessage msg, String channelId){
+    public static void broadcastMessageToChannel(SocketMessage msg, String channelId){
     	//TODO: check channel "<auto>" again? - should have been replaced in channel-check at start ...
     	SocketChannel sc = SocketChannelPool.getChannel(channelId);
     	List<SocketUser> activeChannelUsers = sc.getActiveMembers(false); 		//TODO: this one is tricky, for normal messages it should be "false" 
-    	broadcastMessage(msg, activeChannelUsers);
+    	broadcastMessageToSocketUsers(msg, activeChannelUsers);
     }
+    
     //Sends message to a list of active channel users
-    public static void broadcastMessage(SocketMessage msg, Collection<SocketUser> userList){
+    public static void broadcastMessageToSocketUsers(SocketMessage msg, Collection<SocketUser> userList){
     	//to all users
     	if (msg.receiver == null || msg.receiver.isEmpty()){
     		//make 2 messages, one safe one with credentials
@@ -142,10 +144,10 @@ public class SepiaSocketBroadcaster {
 	    				}
 	    				//don't send credentials when the receiver is not an assistant (or another trustworthy receiver)
 	    				//System.out.println("(1) Send safe data: " + safeMsg);		//debug
-	    				broadcastMessage(safeMsg, su.getUserSession());
+	    				broadcastNow(safeMsg, su.getUserSession());
 	    			}else{
 	    				//System.out.println("(1) Send unsafe data: " + fullMsg);		//debug
-	    				broadcastMessage(fullMsg, su.getUserSession());
+	    				broadcastNow(fullMsg, su.getUserSession());
 	    			}
     			}
             }
@@ -166,16 +168,16 @@ public class SepiaSocketBroadcaster {
     				Session recSession = u.getUserSession();
     				boolean isTrusty = isTrustyReceiver(u);
     				//make 2 messages, one safe one with credentials
-    	    		JSONObject fullMsg = msg.getJSON();
-    	    		JSONObject safeMsg = makeSafeMessage(msg);
     	    		if (recSession != null){
     	    			if (!isTrusty){
+    	    				JSONObject safeMsg = makeSafeMessage(msg);
     	        			//don't send credentials when the receiver is not an assistant (or another trustworthy receiver)
     	    				//System.out.println("(2) Send safe data: " + safeMsg);		//debug
-    	    				broadcastMessage(safeMsg, recSession);
+    	    				broadcastNow(safeMsg, recSession);
     	    			}else{
+    	    				JSONObject fullMsg = msg.getJSON();
     	    				//System.out.println("(2) Send unsafe data: " + fullMsg);		//debug
-    	    				broadcastMessage(fullMsg, recSession);
+    	    				broadcastNow(fullMsg, recSession);
     	        		}
     	    		}
     	    		//confirmation to user is included in filter
@@ -183,20 +185,23 @@ public class SepiaSocketBroadcaster {
     		});
     	}
     }
+    
     //sends a message to user of given session
-    public static void broadcastMessage(SocketMessage msg, Session session) {
+    public static void broadcastMessageToSession(SocketMessage msg, Session session) {
     	SocketUser su = SocketUserPool.getUserBySession(session);
     	if (su == null){
-    		broadcastMessage(makeSafeMessage(msg), session); 		//TODO: is this limiting some authentication process?
+    		broadcastNow(makeSafeMessage(msg), session); 		//TODO: is this limiting some authentication process?
     	}else{
     		Collection<SocketUser> userList = new ArrayList<>();
 	    	userList.add(su);
 	    	msg.receiver = su.getUserId();
-	    	broadcastMessage(msg, userList);
+	    	//this will take care of making the message safe and sending it to receiver and sender (confirmation)
+	    	broadcastMessageToSocketUsers(msg, userList);
     	}
     }
+    
     //sends a message to user of given session - better not use this directly 'cause that would skip the safety procedures
-    private static void broadcastMessage(JSONObject msg, Session session) {
+    private static void broadcastNow(JSONObject msg, Session session) {
     	//System.out.println(msg); 		//DEBUG
        	try {
             session.getRemote().sendString(msg.toJSONString());
