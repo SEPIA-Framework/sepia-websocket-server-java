@@ -3,11 +3,13 @@ package net.b07z.sepia.websockets.server;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.json.simple.JSONObject;
 
 import net.b07z.sepia.server.core.data.Role;
+import net.b07z.sepia.server.core.server.ConfigDefaults;
 import net.b07z.sepia.server.core.tools.JSON;
 import net.b07z.sepia.websockets.common.SocketChannel;
 import net.b07z.sepia.websockets.common.SocketChannelPool;
@@ -124,6 +126,15 @@ public class SepiaSocketBroadcaster {
     	//TODO: check channel "<auto>" again? - should have been replaced in channel-check at start ...
     	SocketChannel sc = SocketChannelPool.getChannel(channelId);
     	List<SocketUser> activeChannelUsers = sc.getActiveMembers(false); 		//TODO: this one is tricky, for normal messages it should be "false" 
+    	
+    	//special conditions: channel is private user channel?
+		if (SocketConfig.inUserChannelBroadcastOnlyToAssistantAndSelf && msg.sender.equalsIgnoreCase(channelId)){
+    		//get only sender and assistant
+			activeChannelUsers = activeChannelUsers.stream().filter(su -> {
+				return (su.getDeviceId().equalsIgnoreCase(msg.senderDeviceId) || su.getUserId().equalsIgnoreCase(ConfigDefaults.defaultAssistantUserId)); 
+			}).collect(Collectors.toList());
+    	}
+		
     	broadcastMessageToSocketUsers(msg, activeChannelUsers);
     }
     
@@ -163,25 +174,25 @@ public class SepiaSocketBroadcaster {
     	
     	//to single user
     	}else{
-    		System.out.println("(2) Broadcast from " + msg.sender);		//debug
-    		
+    		//System.out.println("(2) Broadcast from " + msg.sender);		//debug
+    		/*
     		System.out.println("msg.receiver: " + msg.receiver);
 			System.out.println("msg.receiverDeviceId: " + msg.receiverDeviceId);
 			System.out.println("msg.sender: " + msg.sender);
 			System.out.println("msg.senderDeviceId: " + msg.senderDeviceId);
-			
+			*/
     		userList.stream().filter(u -> {
-    			
+    			/*
     			System.out.println("filter userId: " + u.getUserId());
     			System.out.println("filter deviceId: " + u.getDeviceId());
-    			
+    			*/
     			boolean isReceiver = u.getUserId().equalsIgnoreCase(msg.receiver) 
     					&& (!SocketConfig.distinguishUsersByDeviceId || u.getDeviceId().equalsIgnoreCase(msg.receiverDeviceId));
     			boolean isSender = u.getUserId().equalsIgnoreCase(msg.sender)
     					&& (!SocketConfig.distinguishUsersByDeviceId || u.getDeviceId().equalsIgnoreCase(msg.senderDeviceId));
     			return (isReceiver || isSender);
     		}).forEach(u -> {
-    			System.out.println("(2) to: " + u.getUserId() + ", " + u.getDeviceId());		//debug
+    			//System.out.println("(2) to: " + u.getUserId() + ", " + u.getDeviceId());		//debug
     			//will check receiver AND sender:
     			if (!u.getUserSession().isOpen()){
     				SocketUserPool.removeUser(u);

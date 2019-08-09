@@ -46,6 +46,7 @@ public class SocketConfig {
 	
 	//General chat settings
 	public static boolean distinguishUsersByDeviceId = true;		//allow 2 users with same ID to be active when device ID is different?
+	public static boolean inUserChannelBroadcastOnlyToAssistantAndSelf = true;	//in user private channel don't broadcast to other devices
 	
 	//----------helpers----------
 	

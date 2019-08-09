@@ -71,7 +71,7 @@ public class SepiaSocketHandler implements SocketServer {
 
     //Message
     public void onMessage(Session userSession, String message) {
-    	System.out.println(message); 		//DEBUG
+    	//System.out.println(message); 		//DEBUG
     	SocketMessage msg;
 		try {
 			msg = SocketMessage.importJSON(message);

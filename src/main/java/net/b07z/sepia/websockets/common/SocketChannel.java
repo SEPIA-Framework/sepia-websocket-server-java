@@ -161,6 +161,9 @@ public class SocketChannel {
 		return members.contains(user.getUserId());
 		//return getAllMembers().contains(user);
 	}
+	public boolean isUserMemberOfChannel(String userId){
+		return members.contains(userId);
+	}
 	
 	/**
 	 * Get channel data as JSON object.
