@@ -9,6 +9,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import net.b07z.sepia.server.core.server.ConfigDefaults;
+import net.b07z.sepia.server.core.tools.Is;
 import net.b07z.sepia.server.core.tools.JSON;
 
 /**
@@ -30,22 +31,32 @@ public class SocketChannel {
 		systemChannels.add(UNKNOWN);
 	}
 	
-	private String channelId;		//name of the channel
+	private String channelId;		//ID of the channel (has to be unique)
 	private String channelKey;		//password to access channel
+	private String channelName;		//given name of channel (does not have to be unique)
+	
+	private String serverId;		//ID of server where this channel was created, aka server-local-name
 	
 	private String owner;			//admin of the channel
 	private boolean isOpen = false;
 	private Set<String> members;	//users allowed to be in this channel
 	
 	/**
-	 * Create new channel
+	 * Create new channel. NOTE: server ID will be assigned automatically to local server name.
 	 * @param id - unique channel ID
 	 * @param key - security key
 	 * @param owner - channel owner (user ID)
+	 * @param channelName - given name of the channel (not unique)
 	 */
-	public SocketChannel(String id, String key, String owner){
+	public SocketChannel(String id, String key, String owner, String channelName){
 		this.channelId = id;
 		this.channelKey = key;
+		if (Is.notNullOrEmpty(channelName)){
+			this.channelName = channelName;
+		}else{
+			this.channelName = "New Channel";
+		}
+		this.serverId = SocketConfig.localName;
 		this.owner = owner;
 		this.members = new ConcurrentSkipListSet<String>();
 		if (key.equals("open")){
@@ -59,12 +70,16 @@ public class SocketChannel {
 	public SocketChannel(JSONObject channelJson){
 		this.channelId = JSON.getString(channelJson, "channel_id");
 		this.channelKey = JSON.getString(channelJson, "channel_key");
+		this.channelName = JSON.getString(channelJson, "channel_name");
+		this.serverId = JSON.getString(channelJson, "server_id");
 		this.isOpen = JSON.getBoolean(channelJson, "public");
 		this.owner = JSON.getString(channelJson, "owner");
 		this.members = new ConcurrentSkipListSet<String>();
 		JSONArray membersArray = JSON.getJArray(channelJson, "members");
-		for (Object o : membersArray){
-			this.members.add(o.toString());
+		if (membersArray != null){
+			for (Object o : membersArray){
+				this.members.add(o.toString());
+			}
 		}
 		if (this.isOpen){
 			//might already be in members but just to make sure ...
@@ -79,6 +94,10 @@ public class SocketChannel {
 	
 	public String getChannelId(){
 		return channelId;
+	}
+	
+	public String getChannelKey(){
+		return channelKey;
 	}
 	
 	public String getOwner(){
@@ -168,15 +187,19 @@ public class SocketChannel {
 	/**
 	 * Get channel data as JSON object.
 	 */
+	@SuppressWarnings("unchecked")
 	public JSONObject getJson(){
 		JSONObject channel = new JSONObject();
 		JSON.put(channel, "channel_id", channelId);
 		JSON.put(channel, "channel_key", channelKey);
+		JSON.put(channel, "channel_name", channelName);
+		JSON.put(channel, "server_id", serverId);
 		JSON.put(channel, "owner", owner);
 		JSON.put(channel, "public", isOpen);
-		JSON.put(channel, "members", members.toArray());
+		JSONArray membersArray = new JSONArray();
+		membersArray.addAll(members);
+		JSON.put(channel, "members", membersArray);
 		/*
-		JSON.put(channel, "channel_name", "");				//not yet implemented
 		JSON.put(channel, "assistants", new JSONArray());	//not yet implemented
 		JSON.put(channel, "info", new JSONObject());		//not yet implemented
 		*/

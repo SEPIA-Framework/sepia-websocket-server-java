@@ -107,7 +107,10 @@ public class StartWebSocketServer {
 	//SETUP DEFAULT CHANNELS
 	public static void createDefaultChannels(){
 		try {
-			SocketChannelPool.createChannel(SocketChannel.OPEN_WORLD, SocketConfig.SERVERNAME, true);		//Open world
+			//Open world
+			SocketChannelPool.createChannel(
+					SocketChannel.OPEN_WORLD, SocketConfig.SERVERNAME, true, "Open World"
+			);
 			
 		} catch (Exception e) {
 			log.error("One or more default channels could not be created!");

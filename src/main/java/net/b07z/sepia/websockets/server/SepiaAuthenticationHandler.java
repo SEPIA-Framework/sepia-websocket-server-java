@@ -92,8 +92,9 @@ public class SepiaAuthenticationHandler implements ServerMessageHandler {
 				SocketChannel sc = SocketChannelPool.getChannel(userId);
 				String channelId = null;
 				if (sc == null){
-					String channelKey = SocketChannelPool.createChannel(userId, userId, false);
-					sc = SocketChannelPool.getChannel(userId);
+					String channelName = "My Private Channel";
+					sc = SocketChannelPool.createChannel(userId, userId, false, channelName);
+					String channelKey = sc.getChannelKey();
 					channelId = sc.getChannelId();
 					//add user
 					sc.addUser(participant, channelKey);

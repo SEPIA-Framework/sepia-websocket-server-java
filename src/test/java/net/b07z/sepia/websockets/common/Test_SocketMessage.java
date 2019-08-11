@@ -5,7 +5,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import net.b07z.sepia.server.core.data.Role;
 
-public class TestSocketMessage {
+public class Test_SocketMessage {
 	
 	//TODO: rewrite to JUnit test
 

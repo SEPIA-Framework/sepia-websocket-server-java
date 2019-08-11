@@ -1,7 +1,8 @@
 package net.b07z.sepia.websockets.endpoints;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -10,10 +11,13 @@ import net.b07z.sepia.server.core.data.Role;
 import net.b07z.sepia.server.core.server.RequestParameters;
 import net.b07z.sepia.server.core.server.RequestPostParameters;
 import net.b07z.sepia.server.core.server.SparkJavaFw;
+import net.b07z.sepia.server.core.tools.Is;
 import net.b07z.sepia.server.core.tools.JSON;
 import net.b07z.sepia.server.core.users.Account;
 import net.b07z.sepia.websockets.common.SocketChannel;
 import net.b07z.sepia.websockets.common.SocketChannelPool;
+import net.b07z.sepia.websockets.common.SocketConfig;
+import net.b07z.sepia.websockets.database.ChannelsDatabase;
 import spark.Request;
 import spark.Response;
 
@@ -35,42 +39,48 @@ public class ChannelManager {
     	Account userAccount = new Account();
 		if (userAccount.authenticate(params)){
 			//log.info("Authenticated: " + userAccount.getUserID() + ", roles: " + userAccount.getUserRoles()); 		//debug
-			if (userAccount.hasRole(Role.developer.name())){
+			if (userAccount.hasRole(Role.user.name())){
 				//get parameters
-				String channelId = params.getString("channelId");
+				String channelName = params.getString("channelName");
+				if (Is.nullOrEmpty(channelName)){
+					channelName = "New Channel";
+				}else{
+					channelName = channelName.replaceAll("[^\\w\\s]","").replaceAll("\\s+", " ");
+				}
 				JSONArray initialMembers = params.getJsonArray("members");
-				String owner = userAccount.getUserID();
+				String ownerId = userAccount.getUserID();
 				boolean isPublic = params.getBoolOrDefault("isPublic", false);
 				boolean addAssistant = params.getBoolOrDefault("addAssistant", true);
 				
-				if (channelId == null || channelId.isEmpty()){
-					JSONObject msgJSON = JSON.make("result", "fail", "error", "missing channelId");
-					return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
-				}else{
-					//filter system channels (user can't create them)
-					if (SocketChannel.systemChannels.contains(channelId)){
-						JSONObject msgJSON = JSON.make("result", "fail", "error", "invalid channelId");
-						return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
-					}
-					//filter valid channel names
-					String cleanChannelId = channelId.replaceAll("[^\\w\\s]","").replaceAll("\\s+", " ");
-					if (!cleanChannelId.equals(channelId)){
-						JSONObject msgJSON = JSON.make("result", "fail", "error", "invalid channelId, please use only letters, numbers and '_'.");
-						return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
-					}
-				}
+				//build channel
 				try{
+					//check number of allowed own channels
+					ChannelsDatabase channelsDb = SocketConfig.getDefaultChannelsDatabase();
+					if (!userAccount.hasRole(Role.superuser.name())){
+						List<SocketChannel> socketChannelsOfUser = channelsDb.getAllChannelsOwnedBy(ownerId);
+						if (socketChannelsOfUser == null){
+							JSONObject msgJSON = JSON.make("result", "fail", "error", "failed to check channels, please try again or check database connection.");
+							return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
+						}else if (socketChannelsOfUser.size() >= SocketConfig.maxChannelsPerUser){
+							JSONObject msgJSON = JSON.make("result", "fail", "error", "user has reached maximum number of allowed channels: " + socketChannelsOfUser.size() + " of " + SocketConfig.maxChannelsPerUser);
+							return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
+						}
+					}
+					
+					//get new ID for channel
+					String channelId = SocketChannelPool.getRandomUniqueChannelId();
+
 					//create channel
-					String channelKey = SocketChannelPool.createChannel(channelId, owner, isPublic);
-					if (channelKey != null){
-						List<String> members = new ArrayList<>();
-						members.add(owner);
+					SocketChannel sc = SocketChannelPool.createChannel(channelId, ownerId, isPublic, channelName);
+					if (sc != null){
+						String channelKey = sc.getChannelKey();
+						Set<String> members = new HashSet<>();
+						members.add(ownerId);
 						if (initialMembers != null && !initialMembers.isEmpty()){
 							for (Object o : initialMembers){
 								members.add((String) o);
 							}
 						}
-						SocketChannel sc = SocketChannelPool.getChannel(channelId);
 						for (String s : members){
 							sc.addUser(s, channelKey);
 							//System.out.println("Member: " + s); 									//DEBUG
@@ -81,6 +91,8 @@ public class ChannelManager {
 						}
 						JSONObject msgJSON = JSON.make("result", "success",	"key", channelKey, "channelId", channelId);
 						return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
+						
+						//TODO: store channel
 					
 					}else{
 						//error
@@ -105,6 +117,41 @@ public class ChannelManager {
     }
     
     /**
+     * Delete existing channel.
+     */
+    public static String deleteChannel(Request request, Response response){
+    	//TODO:
+    	// - authenticate
+    	// - get parameters (channelId, key, user)
+    	// - return success
+    	// ...
+    	
+    	//get parameters (or throw error)
+    	RequestParameters params = new RequestPostParameters(request);
+    	
+    	//authenticate
+    	Account userAccount = new Account();
+		if (userAccount.authenticate(params)){
+			
+			//filter system channels (user can't create them) - TODO: move this where it makes sense
+			/*
+			if (SocketChannel.systemChannels.contains(channelId)){
+				JSONObject msgJSON = JSON.make("result", "fail", "error", "invalid channelId");
+				return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
+			}
+			*/
+			
+			JSONObject msgJSON = JSON.make("result", "fail", "error", "not yet implemented");
+			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
+			
+		}else{
+			//refuse
+			JSONObject msgJSON = JSON.make("result", "fail", "error", "not authorized");
+			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 404);
+		}
+    }
+    
+    /**
      * Join a channel.
      */
     public static String joinChannel(Request request, Response response){
@@ -120,7 +167,7 @@ public class ChannelManager {
     	//authenticate
     	Account userAccount = new Account();
 		if (userAccount.authenticate(params)){
-    	
+			
 			JSONObject msgJSON = JSON.make("result", "fail", "error", "not yet implemented");
 			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
 			
