@@ -34,7 +34,7 @@ public class SocketChannel {
 	private String channelId;		//ID of the channel (has to be unique)
 	private String channelKey;		//password to access channel
 	private String channelName;		//given name of channel (does not have to be unique)
-	
+
 	private String serverId;		//ID of server where this channel was created, aka server-local-name
 	
 	private String owner;			//admin of the channel
@@ -98,6 +98,10 @@ public class SocketChannel {
 	
 	public String getChannelKey(){
 		return channelKey;
+	}
+	
+	public String getChannelName(){
+		return channelName;
 	}
 	
 	public String getOwner(){

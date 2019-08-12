@@ -75,6 +75,7 @@ public class SepiaChannelJoinHandler implements ServerMessageHandler {
 				        JSONObject data = new JSONObject();
 				        JSON.add(data, "dataType", DataType.joinChannel.name());
 				        JSON.add(data, "channelId", nsc.getChannelId());
+				        JSON.add(data, "channelName", nsc.getChannelName());
 				        JSON.add(data, "givenName", user.getUserName());
 
 				        SocketMessage msgJoinChannel = new SocketMessage("", SocketConfig.SERVERNAME, SocketConfig.localName, 
