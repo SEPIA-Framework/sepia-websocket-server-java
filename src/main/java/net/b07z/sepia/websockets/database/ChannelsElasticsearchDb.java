@@ -80,6 +80,10 @@ public class ChannelsElasticsearchDb implements ChannelsDatabase {
 		
 		if (Connectors.httpSuccess(data)){
 			JSONObject channelData = JSON.getJObject(data, "_source");
+			if (channelData == null){
+				log.error("getChannelWithId - channel not found. ID: " + channelId);
+				return null;
+			}
 			SocketChannel sc = new SocketChannel(channelData);
 			if (!sc.getChannelId().equals(channelId)){
 				log.error("getChannelWithId - found faulty channel entry with ID: " + channelId);

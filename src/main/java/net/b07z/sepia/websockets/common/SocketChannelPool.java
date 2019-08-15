@@ -75,6 +75,10 @@ public class SocketChannelPool {
 		SocketChannel sc = new SocketChannel(channelId, key, owner, channelName);
 		addChannel(sc);
 		log.info("New channel has been created by '" + owner + "' with ID: " + channelId); 		//INFO
+		
+		//TODO: store channel
+		System.out.println("Channel to store: " + sc.getJson()); 		//DEBUG
+		
 		return sc;
 	}
 	
@@ -89,6 +93,7 @@ public class SocketChannelPool {
 	 * Get channel or null.
 	 */
 	public static SocketChannel getChannel(String channelId){
+		//ChannelsDatabase channelsDb = SocketConfig.getDefaultChannelsDatabase();		//TODO: use?
 		return channelPool.get(channelId);
 	}
 	
@@ -105,6 +110,7 @@ public class SocketChannelPool {
 	 * @return List (can be empty)
 	 */
 	public static List<SocketChannel> getAllChannelsOwnedBy(String userId){
+		//ChannelsDatabase channelsDb = SocketConfig.getDefaultChannelsDatabase();		//TODO: use?
 		List<SocketChannel> channels = new ArrayList<>();
 		for (String cId : channelPool.keySet()) {
 			SocketChannel sc = channelPool.get(cId);

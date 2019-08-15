@@ -11,6 +11,7 @@ import org.json.simple.JSONObject;
 import net.b07z.sepia.server.core.server.ConfigDefaults;
 import net.b07z.sepia.server.core.tools.Is;
 import net.b07z.sepia.server.core.tools.JSON;
+import net.b07z.sepia.server.core.tools.Security;
 
 /**
  * This class represents a default private channel on the webSocketServer for registered users.
@@ -87,6 +88,37 @@ public class SocketChannel {
 		}
 	}
 	
+	/**
+	 * Check access key for validity. An access key can be one of two things:<br>
+	 * a) The internal access key of the channel<br>
+	 * b) The hash of userId and internal access key<br>
+	 * If you submit a userId the key will be checked against the hash (b) else it will be checked against
+	 * the internal key (a).<br>
+	 * Using the hash allows a channel owner to invite a specific user instead of giving him a key that everybody can use.
+	 * @param key - channel access key or hash of user ID + channel key
+	 * @param userId - ID of user to allow access or null
+	 * @return
+	 */
+	public boolean checkUserOrChannelKey(String key, String userId){
+		if (Is.notNullOrEmpty(userId)){
+			try{
+				String expectedHash = Security.bytearrayToHexString(Security.getSha256(userId + this.channelKey));
+				if (expectedHash.equals(key)){
+					return true;
+				}else{
+					return false;
+				}
+			}catch (Exception e){
+				e.printStackTrace();
+				return false;
+			} 
+		}else if (key.equals(this.channelKey)){
+			return true;
+		}else{
+			return false;
+		}
+	}
+	
 	@Override
 	public String toString(){
 		return ("channelId:" + channelId + ",members-size:" + members.size());
@@ -115,12 +147,24 @@ public class SocketChannel {
 		return this.isOpen;
 	}
 	
+	/**
+	 * Add user to channel if channelKey fits.
+	 * @param userId - user to add
+	 * @param channelKey - channel access key
+	 * @return true (user added)/false (not allowed)
+	 */
 	public boolean addUser(SocketUser user, String channelKey){
 		return addUser(user.getUserId(), channelKey);
 	}
+	/**
+	 * Add user to channel if channelKey fits.
+	 * @param userId - user to add
+	 * @param channelKey - channel access key
+	 * @return true (user added)/false (not allowed)
+	 */
 	public boolean addUser(String userId, String channelKey){
 		//check key
-		if (channelKey.equals(this.channelKey)){
+		if (checkUserOrChannelKey(channelKey, null)){		//NOTE: we expect internal access key here
 			if (userId != null && !userId.isEmpty()){
 				members.add(userId);
 				return true;

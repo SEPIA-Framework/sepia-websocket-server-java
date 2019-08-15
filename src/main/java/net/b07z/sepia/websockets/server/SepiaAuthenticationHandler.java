@@ -114,6 +114,7 @@ public class SepiaAuthenticationHandler implements ServerMessageHandler {
 				JSONObject data = new JSONObject();
 		        JSON.add(data, "dataType", DataType.joinChannel.name());
 		        JSON.add(data, "channelId", sc.getChannelId());
+		        JSON.add(data, "channelName", sc.getChannelName());
 		        JSON.add(data, "givenName", acceptedName);
 
 		        SocketMessage msgUserName = new SocketMessage(channelId, SocketConfig.SERVERNAME, SocketConfig.localName, userId, deviceId, data);
