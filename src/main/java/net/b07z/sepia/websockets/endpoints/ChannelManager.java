@@ -131,12 +131,6 @@ public class ChannelManager {
      * Delete existing channel.
      */
     public static String deleteChannel(Request request, Response response){
-    	//TODO:
-    	// - authenticate
-    	// - get parameters (channelId, key, user)
-    	// - return success
-    	// ...
-    	
     	//get parameters (or throw error)
     	RequestParameters params = new RequestPostParameters(request);
     	String channelId = params.getString("channelId");
@@ -146,25 +140,53 @@ public class ChannelManager {
 			JSONObject msgJSON = JSON.make("result", "fail", "error", "parameter 'channelId' required.");
 			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
 		}
+		//filter system channels
+		if (SocketChannel.systemChannels.contains(channelId)){
+			JSONObject msgJSON = JSON.make("result", "fail", "error", "invalid channelId.");
+			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
+		}
+		
+		//channel data
+		SocketChannel sc = SocketChannelPool.getChannel(channelId);
+		if (sc == null){
+			JSONObject msgJSON = JSON.make("result", "fail", "error", "channel not found (or temporary access problem).");	//TODO: we should improve the error
+			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
+		}
+		
+		//cannot delete private channel
+		if (channelId.equalsIgnoreCase(sc.getOwner())){
+			JSONObject msgJSON = JSON.make("result", "fail", "error", "cannot delete this channel.");
+			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
+		}
     	
     	//authenticate
     	Account userAccount = new Account();
 		if (userAccount.authenticate(params)){
-			
-			//filter system channels (user can't create them) - TODO: move this where it makes sense
-			/*
-			if (SocketChannel.systemChannels.contains(channelId)){
-				JSONObject msgJSON = JSON.make("result", "fail", "error", "invalid channelId");
+			//allowed?
+			String userId = userAccount.getUserID();
+			if (!sc.getOwner().equals(userId) && !userAccount.hasRole(Role.superuser.name())){
+				JSONObject msgJSON = JSON.make("result", "fail", "error", "not allowed.");
 				return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
+			}else{
+				//delete
+				if (!SocketChannelPool.deleteChannel(sc)){
+					JSONObject msgJSON = JSON.make("result", "fail", "error", "failed to delete channel, unknown error, plz try again.");
+					return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
+				}else{
+					//TODO: kick out all users active in channel? Or broadcast to channel that it has been removed?
+					
+					//all good
+					JSONObject msgJSON = JSON.make(
+							"result", "success",
+							"channelId", channelId,
+							"channelName", sc.getChannelName()
+					);
+					return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
+				}
 			}
-			*/
-			
-			JSONObject msgJSON = JSON.make("result", "fail", "error", "not yet implemented");
-			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
-			
 		}else{
 			//refuse
-			JSONObject msgJSON = JSON.make("result", "fail", "error", "not authorized");
+			JSONObject msgJSON = JSON.make("result", "fail", "error", "not authorized.");
 			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 404);
 		}
     }
@@ -193,6 +215,12 @@ public class ChannelManager {
 		SocketChannel sc = SocketChannelPool.getChannel(channelId);
 		if (sc == null){
 			JSONObject msgJSON = JSON.make("result", "fail", "error", "channel not found (or temporary access problem).");	//TODO: we should improve the error
+			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
+		}
+		
+		//cannot join private channel
+		if (channelId.equalsIgnoreCase(sc.getOwner())){
+			JSONObject msgJSON = JSON.make("result", "fail", "error", "cannot join this channel.");
 			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
 		}
     	

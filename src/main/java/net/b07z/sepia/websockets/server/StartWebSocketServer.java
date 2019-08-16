@@ -139,6 +139,7 @@ public class StartWebSocketServer {
 															SocketConfig.apiVersion, SocketConfig.localName, SocketConfig.localSecret));
         post("/createChannel", (request, response) -> 	ChannelManager.createChannel(request, response));
         post("/joinChannel", (request, response) -> 	ChannelManager.joinChannel(request, response));
+        post("/deleteChannel", (request, response) -> 	ChannelManager.deleteChannel(request, response));
         //TODO:
         //getChannel, getAllChannels, getChannelData, deleteChannel
         

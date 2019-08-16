@@ -100,8 +100,13 @@ public class SocketChannelPool {
 	/**
 	 * Remove channel from pool.
 	 */
-	public static void deleteChannel(SocketChannel sc){
+	public static boolean deleteChannel(SocketChannel sc){
 		channelPool.remove(sc.getChannelId());
+		
+		//TODO: delete channel
+		System.out.println("Channel to delete: " + sc.getJson()); 		//DEBUG
+		
+		return true;
 	}
 	
 	/**
