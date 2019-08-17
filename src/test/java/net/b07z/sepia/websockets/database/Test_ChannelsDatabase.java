@@ -2,7 +2,9 @@ package net.b07z.sepia.websockets.database;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import net.b07z.sepia.server.core.tools.Debugger;
 import net.b07z.sepia.websockets.common.SocketChannel;
@@ -64,9 +66,10 @@ public class Test_ChannelsDatabase {
 		List<SocketChannel> channels = new ArrayList<>();
 		for (int i=0; i<chanNames.size(); i++) {
 			String chanId = SocketChannelPool.getRandomUniqueChannelId();
-			SocketChannel sc = SocketChannelPool.createChannel(chanId, chanOwners.get(i), false, chanNames.get(i));
-			sc.addUser(chanOwners.get(i), sc.getChannelKey());
-			sc.addUser("uid105", sc.getChannelKey());
+			Set<String> members = new HashSet<>();
+			members.add("uid105");
+			boolean addAssistant = false;
+			SocketChannel sc = SocketChannelPool.createChannel(chanId, chanOwners.get(i), false, chanNames.get(i), members, addAssistant);
 			if (chanDb.storeChannel(sc) != 0){
 				throw new Exception("Failed to store channel!");
 			}

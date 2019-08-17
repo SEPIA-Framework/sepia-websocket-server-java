@@ -1,14 +1,18 @@
 package net.b07z.sepia.websockets.common;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.b07z.sepia.server.core.tools.JSON;
 import net.b07z.sepia.server.core.tools.Security;
 
 /**
@@ -48,10 +52,13 @@ public class SocketChannelPool {
 	 * @param owner - creator and admin of the channel
 	 * @param isOpenChannel - is the channel open for everybody?
 	 * @param channelName - arbitrary channel name
-	 * @return access key to share or null if channel already exists
+	 * @param members - collection of initial members
+	 * @param addAssistant - add an assistant like SEPIA to the channel? Note: open channels will have it in any case
+	 * @return {@link SocketChannel} or null if channel already exists
 	 * @throws Exception
 	 */
-	public static SocketChannel createChannel(String channelId, String owner, boolean isOpenChannel, String channelName) throws Exception{
+	public static SocketChannel createChannel(String channelId, String owner, boolean isOpenChannel, String channelName,
+			Collection<String> members, boolean addAssistant) throws Exception{
 		//is channelId allowed?
 		/* -- this restriction only applies to the API endpoint not the method itself --
 		if (!channelId.equalsIgnoreCase(owner) && !owner.equalsIgnoreCase(SocketConfig.SERVERNAME)){
@@ -73,7 +80,26 @@ public class SocketChannelPool {
 							10, 64));
 		}
 		SocketChannel sc = new SocketChannel(channelId, key, owner, channelName);
+		String channelKey = sc.getChannelKey();
 		addChannel(sc);
+				
+		//make sure the owner is also a member (except when it's the server)
+		if (!owner.equals(SocketConfig.SERVERNAME)){
+			members.add(owner);
+		}
+		
+		//add members
+		for (String s : members){
+			sc.addUser(s, channelKey);
+			//System.out.println("Member: " + s); 									//DEBUG
+		}
+		
+		//add assistant
+		if (addAssistant){
+			sc.addSystemDefaultAssistant(); 	//Add SEPIA too
+			//System.out.println("Member: " + SocketConfig.systemAssistantId); 		//DEBUG
+		}
+		
 		log.info("New channel has been created by '" + owner + "' with ID: " + channelId); 		//INFO
 		
 		//TODO: store channel
@@ -112,7 +138,7 @@ public class SocketChannelPool {
 	/**
 	 * Get all channels owned by a specific user.
 	 * @param userId - ID of owner
-	 * @return List (can be empty)
+	 * @return List (can be empty) or null (error)
 	 */
 	public static List<SocketChannel> getAllChannelsOwnedBy(String userId){
 		//ChannelsDatabase channelsDb = SocketConfig.getDefaultChannelsDatabase();		//TODO: use?
@@ -124,6 +150,48 @@ public class SocketChannelPool {
 			}
 		}
 		return channels;
+	}
+	
+	/**
+	 * Get all channels that have a specific user as a member.
+	 * @param userId - member ID to check
+	 * @param includePublic - include public channels
+	 * @return List (can be empty) or null (error)
+	 */
+	public static List<SocketChannel> getAllChannelsAvailableTo(String userId, boolean includePublic){
+		//ChannelsDatabase channelsDb = SocketConfig.getDefaultChannelsDatabase();		//TODO: use?
+		List<SocketChannel> channels = new ArrayList<>();
+		for (String cId : channelPool.keySet()) {
+			SocketChannel sc = channelPool.get(cId);
+			if ((includePublic && sc.isOpen()) || sc.isUserMemberOfChannel(userId)) {
+				channels.add(sc);
+			}
+		}
+		return channels;
+	}
+	
+	/**
+	 * Convert list of channels to JSONArray for client.
+	 * @param list - list of channels
+	 * @param receiverUserId - ID of receiver or null. If not null some fields are modified if its equal to channel owner (e.g. key).
+	 * @return JSONArray expected to be compatible with client channel list
+	 */
+	public static JSONArray convertChannelListToClientArray(List<SocketChannel> channels, String receiverUserId){
+		JSONArray channelsArray = new JSONArray();
+		for (SocketChannel sc : channels){
+			JSONObject channelJson = JSON.make(
+					"id", sc.getChannelId(),
+					"name", sc.getChannelName(),
+					"owner", sc.getOwner(),
+					"server", sc.getServerId(),
+					"isOpen", sc.isOpen()
+			);
+			if (sc.getOwner().equals(receiverUserId)){
+				JSON.put(channelJson, "key", sc.getChannelKey()); 		//add key so the owner can generate invite links 
+			}
+			JSON.add(channelsArray, channelJson);
+		}
+		return channelsArray;
 	}
 
 }

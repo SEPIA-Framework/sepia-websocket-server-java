@@ -1,6 +1,11 @@
 package net.b07z.sepia.websockets.server;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.eclipse.jetty.websocket.api.Session;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,14 +97,11 @@ public class SepiaAuthenticationHandler implements ServerMessageHandler {
 				SocketChannel sc = SocketChannelPool.getChannel(userId);
 				String channelId = null;
 				if (sc == null){
-					String channelName = "My Private Channel";
-					sc = SocketChannelPool.createChannel(userId, userId, false, channelName);
-					String channelKey = sc.getChannelKey();
+					String channelName = "<assistant_name>";
+					Set<String> members = new HashSet<String>(); 		//we can leave this empty, it will auto-add the owner
+					boolean addAssistant = true;
+					sc = SocketChannelPool.createChannel(userId, userId, false, channelName, members, addAssistant);
 					channelId = sc.getChannelId();
-					//add user
-					sc.addUser(participant, channelKey);
-					//add default participants
-					sc.addSystemDefaultAssistant();
 					//... we can add more here coming from user account ...
 				}else{
 					channelId = sc.getChannelId();
@@ -111,6 +113,7 @@ public class SepiaAuthenticationHandler implements ServerMessageHandler {
 					participant.setOmnipresent();
 				}
 				
+				//broadcast channel-join event
 				JSONObject data = new JSONObject();
 		        JSON.add(data, "dataType", DataType.joinChannel.name());
 		        JSON.add(data, "channelId", sc.getChannelId());
@@ -120,6 +123,20 @@ public class SepiaAuthenticationHandler implements ServerMessageHandler {
 		        SocketMessage msgUserName = new SocketMessage(channelId, SocketConfig.SERVERNAME, SocketConfig.localName, userId, deviceId, data);
 		        if (msg.msgId != null) msgUserName.setMessageId(msg.msgId);
 		        server.broadcastMessage(msgUserName, userSession);
+		        
+		        //broadcast request to update channel data
+		        boolean includePublic = true;
+		        List<SocketChannel> channels = SocketChannelPool.getAllChannelsAvailableTo(userId, includePublic);
+		        JSONArray channelsArray = null;
+		        if (channels != null){
+		        	channelsArray = SocketChannelPool.convertChannelListToClientArray(channels, userId);
+		        }
+		        SocketMessage msgUpdateData = new SocketMessage(channelId, SocketConfig.SERVERNAME, SocketConfig.localName, userId, deviceId, JSON.make(
+		        		"dataType", DataType.updateData.name(),
+		        		"updateData", "availableChannels",
+		        		"data", channelsArray		//if this is empty the client should call the request method itself
+		        ));
+		        server.broadcastMessage(msgUpdateData, userSession);
 
 		        //broadcast channel welcome and update userList to whole channel
 		        SocketMessage msgListUpdate = SepiaSocketBroadcaster.makeServerStatusMessage(

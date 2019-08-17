@@ -1,6 +1,8 @@
 package net.b07z.sepia.websockets.server;
 import static spark.Spark.*;
 
+import java.util.HashSet;
+
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,7 +111,7 @@ public class StartWebSocketServer {
 		try {
 			//Open world
 			SocketChannelPool.createChannel(
-					SocketChannel.OPEN_WORLD, SocketConfig.SERVERNAME, true, "Open World"
+					SocketChannel.OPEN_WORLD, SocketConfig.SERVERNAME, true, "Open World", new HashSet<String>(), false
 			);
 			
 		} catch (Exception e) {
@@ -140,6 +142,7 @@ public class StartWebSocketServer {
         post("/createChannel", (request, response) -> 	ChannelManager.createChannel(request, response));
         post("/joinChannel", (request, response) -> 	ChannelManager.joinChannel(request, response));
         post("/deleteChannel", (request, response) -> 	ChannelManager.deleteChannel(request, response));
+        post("/getAvailableChannels", (request, response) -> 	ChannelManager.getAvailableChannels(request, response));
         //TODO:
         //getChannel, getAllChannels, getChannelData, deleteChannel
         

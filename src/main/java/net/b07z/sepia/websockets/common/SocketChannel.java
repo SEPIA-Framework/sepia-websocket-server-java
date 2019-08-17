@@ -136,6 +136,10 @@ public class SocketChannel {
 		return channelName;
 	}
 	
+	public String getServerId(){
+		return serverId;
+	}
+	
 	public String getOwner(){
 		return owner;
 	}
@@ -233,7 +237,7 @@ public class SocketChannel {
 	}
 	
 	/**
-	 * Get channel data as JSON object.
+	 * Get channel data as JSON object. NOTE: this is meant for a database and usually needs to be filtered and converted for a client!
 	 */
 	@SuppressWarnings("unchecked")
 	public JSONObject getJson(){

@@ -55,7 +55,7 @@ public class SepiaChannelJoinHandler implements ServerMessageHandler {
 							isAllowed = true;
 						
 						}else{
-							//TODO: test check if user can register for a channel
+							//TODO: test check if user can register for a channel - NOTE: probably rarely used, usually a user would get access via auto-assign or share-link
 							String newChannelKey = (String) credentials.get("channelKey");
 							if (newChannelKey != null && !newChannelKey.isEmpty()){
 								if (nsc.addUser(user, newChannelKey)){
@@ -68,7 +68,11 @@ public class SepiaChannelJoinHandler implements ServerMessageHandler {
 						//broadcast old channel byebye
 						String oldChannel = user.getActiveChannel();	//first get old channel ...
 						user.setActiveChannel(nsc.getChannelId());		//... then remove user from channel
-				        SocketMessage msgListUpdate1 = SepiaSocketBroadcaster.makeServerStatusMessage("", oldChannel, (user.getUserName() + " (" + user.getUserId() + ") left the channel (" + oldChannel + ")"), DataType.byebye, true);
+				        SocketMessage msgListUpdate1 = SepiaSocketBroadcaster.makeServerStatusMessage(
+				        		"", oldChannel, 
+				        		(user.getUserName() + " (" + user.getUserId() + ") left the channel"),	// (" + oldChannel + ")" 
+				        		DataType.byebye, true
+				        );
 				        server.broadcastMessage(user, msgListUpdate1);
 						
 				        //confirm channel switch
@@ -87,17 +91,29 @@ public class SepiaChannelJoinHandler implements ServerMessageHandler {
 				        server.broadcastMessage(msgJoinChannel, userSession);
 				        
 				        //broadcast channel welcome and update userList
-				        SocketMessage msgListUpdate2 = SepiaSocketBroadcaster.makeServerStatusMessage("", nsc.getChannelId(), (user.getUserName() + " (" + user.getUserId() + ") joined the channel (" + nsc.getChannelId() + ")"), DataType.welcome, true);
+				        SocketMessage msgListUpdate2 = SepiaSocketBroadcaster.makeServerStatusMessage(
+				        		"", nsc.getChannelId(), 
+				        		(user.getUserName() + " (" + user.getUserId() + ") joined the channel (" + nsc.getChannelName() + ")"), 
+				        		DataType.welcome, true
+				        );
 				        server.broadcastMessage(user, msgListUpdate2);
 					
 					}else{
 						//broadcast fail of channel join
-						SocketMessage msgSwitchError = SepiaSocketBroadcaster.makeServerStatusMessage(msg.msgId, "<auto>", "Channel join failed, are you allowed in this channel?", DataType.errorMessage, false);
+						SocketMessage msgSwitchError = SepiaSocketBroadcaster.makeServerStatusMessage(
+								msg.msgId, "<auto>", 
+								"Channel join failed, are you allowed in this channel?", 
+								DataType.errorMessage, false
+						);
 						server.broadcastMessage(msgSwitchError, userSession);									
 					}
 				}else{
 					//broadcast fail - channel does not exist
-					SocketMessage msgSwitchError = SepiaSocketBroadcaster.makeServerStatusMessage(msg.msgId, "<auto>", "Channel join failed, channel does not exist!", DataType.errorMessage, false);
+					SocketMessage msgSwitchError = SepiaSocketBroadcaster.makeServerStatusMessage(
+							msg.msgId, "<auto>", 
+							"Channel join failed, channel does not exist!", 
+							DataType.errorMessage, false
+					);
 					server.broadcastMessage(msgSwitchError, userSession);									
 				}
 			}

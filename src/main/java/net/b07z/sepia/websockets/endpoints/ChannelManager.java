@@ -43,7 +43,7 @@ public class ChannelManager {
 				//get parameters
 				String channelName = params.getString("channelName");
 				if (!Is.nullOrEmpty(channelName)){
-					channelName = channelName.replaceAll("[^\\w\\s#-\\?!\\.]","").replaceAll("\\s+", " ");
+					channelName = channelName.replaceAll("[^\\w\\s#\\-\\+&\\?!\\.]","").replaceAll("\\s+", " ");
 					channelName = channelName.substring(0, Math.min(channelName.length(), 26));
 				}
 				if (Is.nullOrEmpty(channelName)){
@@ -54,6 +54,20 @@ public class ChannelManager {
 				String ownerId = userAccount.getUserID();
 				boolean isPublic = params.getBoolOrDefault("isPublic", false);
 				boolean addAssistant = params.getBoolOrDefault("addAssistant", true);
+				
+				//build members array
+				Set<String> members = new HashSet<>();
+				members.add(ownerId);
+				if (initialMembers != null && !initialMembers.isEmpty()){
+					for (Object o : initialMembers){
+						String m = (String) o;
+						if (m.matches("^[A-Za-z]+\\d+$")){		//TODO: prevent more IDs here?
+							members.add((String) o);
+						}else{
+							Debugger.println("createChannel - removed potential member from array due to wrong format: " + m, 1);
+						}
+					}
+				}
 				
 				//build channel
 				try{
@@ -73,29 +87,9 @@ public class ChannelManager {
 					String channelId = SocketChannelPool.getRandomUniqueChannelId();
 
 					//create channel
-					SocketChannel sc = SocketChannelPool.createChannel(channelId, ownerId, isPublic, channelName);
+					SocketChannel sc = SocketChannelPool.createChannel(channelId, ownerId, isPublic, channelName, members, addAssistant);
 					if (sc != null){
 						String channelKey = sc.getChannelKey();
-						Set<String> members = new HashSet<>();
-						members.add(ownerId);
-						if (initialMembers != null && !initialMembers.isEmpty()){
-							for (Object o : initialMembers){
-								String m = (String) o;
-								if (m.matches("^[A-Za-z]+\\d+$")){		//TODO: prevent more IDs here?
-									members.add((String) o);
-								}else{
-									Debugger.println("createChannel - removed potential member from array due to wrong format: " + m, 1);
-								}
-							}
-						}
-						for (String s : members){
-							sc.addUser(s, channelKey);
-							//System.out.println("Member: " + s); 									//DEBUG
-						}
-						if (addAssistant){
-							sc.addSystemDefaultAssistant(); 	//Add SEPIA too
-							//System.out.println("Member: " + SocketConfig.systemAssistantId); 		//DEBUG
-						}
 						JSONObject msgJSON = JSON.make(
 								"result", "success",	
 								"key", channelKey, 
@@ -253,6 +247,44 @@ public class ChannelManager {
 						"channelId", channelId,
 						"channelName", sc.getChannelName(),
 						"owner", sc.getOwner()
+				);
+				return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
+			}
+		}else{
+			//refuse
+			JSONObject msgJSON = JSON.make("result", "fail", "error", "not authorized.");
+			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 404);
+		}
+    }
+    
+    /**
+     * Get channels available to the user (every channel that he's a member of). Optionally exclude public channels.
+     */
+    public static String getAvailableChannels(Request request, Response response){
+    	//get parameters (or throw error)
+    	RequestParameters params = new RequestPostParameters(request);
+    	boolean includePublic = params.getBoolOrDefault("includePublic", true);
+    	
+    	//authenticate
+    	Account userAccount = new Account();
+		if (userAccount.authenticate(params)){
+			//get ID and data
+			String userId = userAccount.getUserID();
+			List<SocketChannel> channels = SocketChannelPool.getAllChannelsAvailableTo(userId, includePublic);
+			
+			//check result
+			if (channels == null){
+				//error
+				JSONObject msgJSON = JSON.make("result", "fail", "error", "failed to get channel data (database error?).");
+				return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
+			}else{
+				//convert result
+				JSONArray channelsArray = SocketChannelPool.convertChannelListToClientArray(channels, userId);
+				
+				//all good
+				JSONObject msgJSON = JSON.make(
+						"result", "success",
+						"channels", channelsArray
 				);
 				return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
 			}

@@ -35,6 +35,7 @@ public class SocketMessage {
 		assistAnswer,		//has data for assistant communication
 		assistFollowUp,		//mostly same as assistAnswer but given as self-initiated follow-up message (clients could theoretically block this to avoid spam)
 		directCmd,			//has a direct cmd for assistant
+		updateData,			//has an data update request attached, either e.g. 'updateData: "channels"' with 'data: ""' or 'data: [channel1, ...]'  
 		remoteAction,		//has a remote action like ASR trigger or hotkey submit
 		errorMessage		//combined with TextType.status this message will be displayed as error line in channel (ignores normal status msg settings)
 	}
