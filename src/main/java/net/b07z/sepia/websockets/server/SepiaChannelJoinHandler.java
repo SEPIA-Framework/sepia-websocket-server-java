@@ -68,12 +68,15 @@ public class SepiaChannelJoinHandler implements ServerMessageHandler {
 						//broadcast old channel byebye
 						String oldChannel = user.getActiveChannel();	//first get old channel ...
 						user.setActiveChannel(nsc.getChannelId());		//... then remove user from channel
-				        SocketMessage msgListUpdate1 = SepiaSocketBroadcaster.makeServerStatusMessage(
-				        		"", oldChannel, 
-				        		(user.getUserName() + " (" + user.getUserId() + ") left the channel"),	// (" + oldChannel + ")" 
-				        		DataType.byebye, true
-				        );
-				        server.broadcastMessage(user, msgListUpdate1);
+						SocketChannel oldSc = SocketChannelPool.getChannel(oldChannel);
+						if (oldSc != null){
+					        SocketMessage msgListUpdate1 = SepiaSocketBroadcaster.makeServerStatusMessage(
+					        		"", oldChannel, 
+					        		(user.getUserName() + " (" + user.getUserId() + ") left the channel"),	// (" + oldChannel + ")" 
+					        		DataType.byebye, true
+					        );
+					        server.broadcastMessage(user, msgListUpdate1);
+						}
 						
 				        //confirm channel switch
 				        JSONObject data = new JSONObject();

@@ -131,11 +131,9 @@ public class SepiaAuthenticationHandler implements ServerMessageHandler {
 		        if (channels != null){
 		        	channelsArray = SocketChannelPool.convertChannelListToClientArray(channels, userId);
 		        }
-		        SocketMessage msgUpdateData = new SocketMessage(channelId, SocketConfig.SERVERNAME, SocketConfig.localName, userId, deviceId, JSON.make(
-		        		"dataType", DataType.updateData.name(),
-		        		"updateData", "availableChannels",
-		        		"data", channelsArray		//if this is empty the client should call the request method itself
-		        ));
+		        SocketMessage msgUpdateData = SepiaSocketBroadcaster.makeServerUpdateDataMessage(
+		        		"availableChannels", channelsArray
+		        );
 		        server.broadcastMessage(msgUpdateData, userSession);
 
 		        //broadcast channel welcome and update userList to whole channel

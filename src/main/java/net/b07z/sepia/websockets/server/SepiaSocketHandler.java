@@ -280,7 +280,6 @@ public class SepiaSocketHandler implements SocketServer {
     //sends a message to user of given session
     @Override
     public void broadcastMessage(SocketMessage msg, Session session) {
-        SepiaSocketBroadcaster.preBroadcastAction(getUserBySession(session), true, false, false);
     	SepiaSocketBroadcaster.broadcastMessageToSession(msg, session);
     }
     

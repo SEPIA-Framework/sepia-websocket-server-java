@@ -97,6 +97,13 @@ public class SocketUser {
 	public void setActiveChannel(String channelId){
 		activeChannelId = channelId;
 	}
+	public boolean isActiveInChannelOrOmnipresent(String channelId){
+		if (this.isOmnipresent() || (this.getActiveChannel().equals(channelId) && this.isActive())){
+			return true;
+		}else{
+			return false;
+		}
+	}
 	
 	public boolean isOmnipresent(){
 		return isOmnipresent;

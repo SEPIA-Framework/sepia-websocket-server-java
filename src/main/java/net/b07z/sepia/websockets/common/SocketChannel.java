@@ -199,7 +199,7 @@ public class SocketChannel {
 		}
 	}
 	
-	public List<SocketUser> getAllMembers(){
+	public List<SocketUser> getAllOnlineMembers(){
 		List<SocketUser> users = new ArrayList<>();
 		for (String u : members){
 			users.addAll(SocketUserPool.getAllUsersById(u));
@@ -207,9 +207,13 @@ public class SocketChannel {
 		return users;
 	}
 	
+	public Set<String> getAllRegisteredMembersById(){
+		return members;
+	}
+	
 	/**
 	 * Get all members of a channel that have an active connection to the server and are currently in this channel.
-	 * @param includeDeactivated - some users might have an active connection but their status is set to "inactive" (e.g. because they use the same account). If they should still receive status updates set this true.
+	 * @param includeDeactivated - some users might have an active connection but their status is set to "inactive" (e.g. because they use the same account and deviceId). If they should be included set this to true.
 	 */
 	public List<SocketUser> getActiveMembers(boolean includeDeactivated){
 		List<SocketUser> users = new ArrayList<>();
@@ -217,10 +221,12 @@ public class SocketChannel {
 			List<SocketUser> sul = SocketUserPool.getAllUsersById(u);
 			if (sul != null){
 				for (SocketUser asu : sul){
-					if (asu.isOmnipresent() || asu.getActiveChannel().equals(this.channelId)){
-						if (includeDeactivated || asu.isActive()){
+					if (includeDeactivated){
+						if (asu.isOmnipresent() || asu.getActiveChannel().equals(this.channelId)){
 							users.add(asu);
 						}
+					}else if (asu.isActiveInChannelOrOmnipresent(this.channelId)){
+						users.add(asu);
 					}
 				}
 			}

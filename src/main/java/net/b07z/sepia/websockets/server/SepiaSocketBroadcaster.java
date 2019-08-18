@@ -2,10 +2,13 @@ package net.b07z.sepia.websockets.server;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.websocket.api.Session;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import net.b07z.sepia.server.core.data.Role;
@@ -44,9 +47,25 @@ public class SepiaSocketBroadcaster {
 		if (dataType != null) 					msg.addData("dataType", dataType.name());
         if (msgId != null && !msgId.isEmpty()) 	msg.setMessageId(msgId);
 		if (addActiveChannelUsersList){
+			//NOTE: you have to make sure that getChannel is not null by checking before if the channel still exists
 			msg.setUserList(SocketChannelPool.getChannel(channelId).getActiveMembers(true));
 		}
         return msg;
+    }
+    
+    /**
+     * Make a message that tells the client to update specific data. Should be sent to a user-session (since it has no channel and receiver).
+     * @param updateType - e.g. "missedChannelMessage" or "availableChannels"
+     * @param data - preferably a JSONObject or JSONArray. If this is empty the client should call the request method itself.
+     * @return
+     */
+    public static SocketMessage makeServerUpdateDataMessage(String updateType, Object data){
+    	SocketMessage msgUpdateData = new SocketMessage(null, SocketConfig.SERVERNAME, SocketConfig.localName, null, null, JSON.make(
+        		"dataType", DataType.updateData.name(),
+        		"updateData", updateType,
+        		"data", data
+        ));
+    	return msgUpdateData;
     }
     
     //make a safe message for all the users/objects in the channel that should not get sensitive data
@@ -85,23 +104,22 @@ public class SepiaSocketBroadcaster {
     public static void preBroadcastAction(SocketUser user, boolean isSingleSession, boolean isAllSessions, boolean skipActiveCheck){
     	if (user != null){
     		user.setActive();
-    	}
-    	if (!skipActiveCheck){
-    		//check conflicts with multiple logins of same ID:
-	    	if (!isSingleSession && !isAllSessions 
-	    		&& user != null && !user.getUserId().isEmpty()){
-	    		
-				//this might be a bit costly, but for now we deactivate all users that are active with the same id in the same channel
-				List<SocketUser> deactivatedUsers = SocketUserPool.setUsersWithSameIdInactive(user);
-				//and just in case the current user-session was inactive:
-				user.setActive();
-				//inform the inactive sessions
-		        SocketMessage msgStatusUpdate = makeServerStatusMessage(
-		        		"", user.getActiveChannel(), 
-		        		"Your session is now inactive in channel (" + user.getActiveChannel() + ") until you send a message", 
-		        		DataType.byebye, true
-		        );
-		        broadcastMessageToSocketUsers(msgStatusUpdate, deactivatedUsers);
+    		
+	    	if (!skipActiveCheck){
+	    		//check conflicts with multiple logins of same ID:
+		    	if (!isSingleSession && !isAllSessions && !user.getUserId().isEmpty()){
+					//this might be a bit costly, but for now we deactivate all users that are active with the same id in the same channel
+					List<SocketUser> deactivatedUsers = SocketUserPool.setUsersWithSameIdInactive(user);
+					//and just in case the current user-session was inactive:
+					user.setActive();
+					//inform the inactive sessions
+			        SocketMessage msgStatusUpdate = makeServerStatusMessage(
+			        		"", user.getActiveChannel(), 
+			        		"Your session is now inactive in channel (" + user.getActiveChannel() + ") until you send a message", 
+			        		DataType.byebye, true
+			        );
+			        broadcastMessageToSocketUsers(msgStatusUpdate, deactivatedUsers);
+		    	}
 	    	}
     	}
     }
@@ -125,17 +143,57 @@ public class SepiaSocketBroadcaster {
     public static void broadcastMessageToChannel(SocketMessage msg, String channelId){
     	//TODO: check channel "<auto>" again? - should have been replaced in channel-check at start ...
     	SocketChannel sc = SocketChannelPool.getChannel(channelId);
-    	List<SocketUser> activeChannelUsers = sc.getActiveMembers(false); 		//TODO: this one is tricky, for normal messages it should be "false" 
-    	
-    	//special conditions: channel is private user channel?
-		if (SocketConfig.inUserChannelBroadcastOnlyToAssistantAndSelf && msg.sender.equalsIgnoreCase(channelId)){
-    		//get only sender and assistant
-			activeChannelUsers = activeChannelUsers.stream().filter(su -> {
-				return (su.getDeviceId().equalsIgnoreCase(msg.senderDeviceId) || su.getUserId().equalsIgnoreCase(ConfigDefaults.defaultAssistantUserId)); 
-			}).collect(Collectors.toList());
+    	if (sc == null){
+    		//channel does not exist (anymore?)
+    		//TODO: return message to sender with 'missing channel' note
+    	}else{
+    		//public channel
+    		if (sc.isOpen()){
+    			//in public channels only active members get messages
+    			List<SocketUser> activeChannelUsers = sc.getActiveMembers(false);
+    			broadcastMessageToSocketUsers(msg, activeChannelUsers);
+    		
+    		//private channel
+    		}else if (sc.getOwner().equalsIgnoreCase(channelId)){
+    			//in private channels messages target device IDs
+    			List<SocketUser> activeChannelUsers = sc.getActiveMembers(false);
+    			if (SocketConfig.inUserChannelBroadcastOnlyToAssistantAndSelf && msg.sender.equalsIgnoreCase(channelId)){
+    	    		//get only sender (userId + deviceId) and assistant
+    				activeChannelUsers = activeChannelUsers.stream().filter(su -> {
+    					return (su.getDeviceId().equalsIgnoreCase(msg.senderDeviceId) || su.getUserId().equalsIgnoreCase(ConfigDefaults.defaultAssistantUserId)); 
+    				}).collect(Collectors.toList());
+    	    	}
+    			broadcastMessageToSocketUsers(msg, activeChannelUsers);
+    		
+    		//other channels
+    		}else{
+    			List<SocketUser> inactiveChannelUsers = new ArrayList<>();
+    			List<SocketUser> activeChannelUsers = new ArrayList<>();
+    			Set<String> offlineChannelUsers = new HashSet<>(sc.getAllRegisteredMembersById());
+    			sc.getAllOnlineMembers().forEach((su) -> {
+    				if (su.isActiveInChannelOrOmnipresent(channelId)){
+    					activeChannelUsers.add(su);
+    					offlineChannelUsers.remove(su.getUserId());
+    				}else{
+    					inactiveChannelUsers.add(su);
+    					offlineChannelUsers.remove(su.getUserId());
+    				}
+    			});
+    			//broadcast to active in channel
+    			broadcastMessageToSocketUsers(msg, activeChannelUsers);
+    			
+    			//broadcast 'check channel' to online
+    			JSONArray data = new JSONArray();
+    			JSON.add(data, JSON.make("channelId", channelId));
+    			SocketMessage msgUpdateData = makeServerUpdateDataMessage(
+    					"missedChannelMessage", data
+    			);
+    			broadcastMessageToSocketUsers(msgUpdateData, inactiveChannelUsers);
+    			
+    			//notify offline
+    			//TODO: how do we notify them?
+    		}
     	}
-		
-    	broadcastMessageToSocketUsers(msg, activeChannelUsers);
     }
     
     //Sends message to a list of active channel users
@@ -174,7 +232,7 @@ public class SepiaSocketBroadcaster {
     	
     	//to single user
     	}else{
-    		//System.out.println("(2) Broadcast from " + msg.sender);		//debug
+    		System.out.println("(2) Broadcast from " + msg.sender);		//debug
     		/*
     		System.out.println("msg.receiver: " + msg.receiver);
 			System.out.println("msg.receiverDeviceId: " + msg.receiverDeviceId);
@@ -192,7 +250,7 @@ public class SepiaSocketBroadcaster {
     					&& (!SocketConfig.distinguishUsersByDeviceId || u.getDeviceId().equalsIgnoreCase(msg.senderDeviceId));
     			return (isReceiver || isSender);
     		}).forEach(u -> {
-    			//System.out.println("(2) to: " + u.getUserId() + ", " + u.getDeviceId());		//debug
+    			System.out.println("(2) to: " + u.getUserId() + ", " + u.getDeviceId());		//debug
     			//will check receiver AND sender:
     			if (!u.getUserSession().isOpen()){
     				SocketUserPool.removeUser(u);
@@ -224,10 +282,12 @@ public class SepiaSocketBroadcaster {
     	if (su == null){
     		broadcastNow(makeSafeMessage(msg), session); 		//TODO: is this limiting some authentication process?
     	}else{
+    		su.setActive();		//TODO: do we really want this? ... and do we really need all the following code here ... ?
     		Collection<SocketUser> userList = new ArrayList<>();
 	    	userList.add(su);
 	    	msg.receiver = su.getUserId();
-	    	//this will take care of making the message safe and sending it to receiver and sender (confirmation)
+	    	msg.receiverDeviceId = su.getDeviceId();
+	    	//this will take care of making the message safe (and sending it to receiver and sender (confirmation) ??? I think this is not valid anymore ...)
 	    	broadcastMessageToSocketUsers(msg, userList);
     	}
     }
