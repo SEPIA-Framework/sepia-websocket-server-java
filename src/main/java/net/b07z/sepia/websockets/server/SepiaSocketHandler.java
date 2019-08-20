@@ -159,7 +159,7 @@ public class SepiaSocketHandler implements SocketServer {
 					if (user.isOmnipresent()){
 						SocketUser rec = SocketUserPool.getActiveUserById(msg.receiver);
 						if (rec != null){
-							channelId = rec.getActiveChannel(); //TODO: does it sense to broadcast this to all users with this ID not only active?
+							channelId = rec.getActiveChannel(); //TODO: does it make sense to broadcast this to all users with this ID not only active?
 							msg.channelId = channelId;			//refresh
 							channelAccepted = true;
 						}
@@ -241,6 +241,11 @@ public class SepiaSocketHandler implements SocketServer {
 				//join channel
 				}else if (dataType.equals(DataType.joinChannel.name())){
 					ServerMessageHandler smh = new SepiaChannelJoinHandler(this);
+					smh.handle(userSession, msg);
+					
+				//update data (request)
+				}else if (dataType.equals(DataType.updateData.name())){
+					ServerMessageHandler smh = new SepiaUpdateDataHandler(this);
 					smh.handle(userSession, msg);
 									
 			    //broadcast remote action - note: a remote action needs to be validated by an assistant (see checks above)

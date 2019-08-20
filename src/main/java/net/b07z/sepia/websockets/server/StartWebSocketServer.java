@@ -143,7 +143,11 @@ public class StartWebSocketServer {
         post("/deleteChannel", (request, response) -> 	ChannelManager.deleteChannel(request, response));
         post("/getAvailableChannels", (request, response) -> 	ChannelManager.getAvailableChannels(request, response));
         //TODO:
-        //getChannel, getAllChannels, getChannelData, deleteChannel
+        //getChannel, getChannelData
+        
+        //usually requested via socket connection:
+        post("/getChannelsWithMissedMessages", (request, response) -> 	ChannelManager.getChannelsWithMissedMessages(request, response));
+        
         
         //set access-control headers to enable CORS
 		if (SocketConfig.allowCORS){

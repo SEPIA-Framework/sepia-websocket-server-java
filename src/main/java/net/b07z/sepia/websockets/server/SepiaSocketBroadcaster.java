@@ -169,6 +169,7 @@ public class SepiaSocketBroadcaster {
     			List<SocketUser> inactiveChannelUsers = new ArrayList<>();
     			List<SocketUser> activeChannelUsers = new ArrayList<>();
     			Set<String> offlineChannelUsers = new HashSet<>(sc.getAllRegisteredMembersById());
+    			offlineChannelUsers.remove(msg.sender);
     			sc.getAllOnlineMembers().forEach((su) -> {
     				if (su.isActiveInChannelOrOmnipresent(channelId)){
     					activeChannelUsers.add(su);
@@ -189,7 +190,10 @@ public class SepiaSocketBroadcaster {
     			);
     			broadcastMessageToSocketUsers(msgUpdateData, inactiveChannelUsers);
     			
-    			//notify offline
+    			//register missed message
+    			for (String userId : offlineChannelUsers){
+    				SocketChannelHistory.addChannelWithMissedMessagesForUser(userId, channelId);
+    			}
     			//TODO: how do we notify them?
     		}
     	}
@@ -231,7 +235,7 @@ public class SepiaSocketBroadcaster {
     	
     	//to single user
     	}else{
-    		System.out.println("(2) Broadcast from " + msg.sender);		//debug
+    		//System.out.println("(2) Broadcast from " + msg.sender);		//debug
     		/*
     		System.out.println("msg.receiver: " + msg.receiver);
 			System.out.println("msg.receiverDeviceId: " + msg.receiverDeviceId);
@@ -249,7 +253,7 @@ public class SepiaSocketBroadcaster {
     					&& (!SocketConfig.distinguishUsersByDeviceId || u.getDeviceId().equalsIgnoreCase(msg.senderDeviceId));
     			return (isReceiver || isSender);
     		}).forEach(u -> {
-    			System.out.println("(2) to: " + u.getUserId() + ", " + u.getDeviceId());		//debug
+    			//System.out.println("(2) to: " + u.getUserId() + ", " + u.getDeviceId());		//debug
     			//will check receiver AND sender:
     			if (!u.getUserSession().isOpen()){
     				SocketUserPool.removeUser(u);

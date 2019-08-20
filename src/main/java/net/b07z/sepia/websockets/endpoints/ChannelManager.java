@@ -17,6 +17,7 @@ import net.b07z.sepia.server.core.tools.JSON;
 import net.b07z.sepia.server.core.users.Account;
 import net.b07z.sepia.websockets.common.SocketChannel;
 import net.b07z.sepia.websockets.common.SocketConfig;
+import net.b07z.sepia.websockets.server.SocketChannelHistory;
 import net.b07z.sepia.websockets.server.SocketChannelPool;
 import spark.Request;
 import spark.Response;
@@ -285,6 +286,44 @@ public class ChannelManager {
 				JSONObject msgJSON = JSON.make(
 						"result", "success",
 						"channels", channelsArray
+				);
+				return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
+			}
+		}else{
+			//refuse
+			JSONObject msgJSON = JSON.make("result", "fail", "error", "not authorized.");
+			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 404);
+		}
+    }
+    
+    /**
+     * Get channels of the user that are marked for 'missed messages'.<br>
+     * NOTE: This data can (and should?) be requested via socket connection as well.
+     */
+    public static String getChannelsWithMissedMessages(Request request, Response response){
+    	//get parameters (or throw error)
+    	RequestParameters params = new RequestPostParameters(request);
+    	
+    	//authenticate
+    	Account userAccount = new Account();
+		if (userAccount.authenticate(params)){
+			//get ID and data
+			String userId = userAccount.getUserID();
+			Set<String> channels = SocketChannelHistory.getAllChannelsWithMissedMassegesForUser(userId);
+			
+			//check result
+			if (channels == null){
+				//error
+				JSONObject msgJSON = JSON.make("result", "fail", "error", "failed to get channel data (database error?).");
+				return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
+			}else{
+				//convert result
+				//JSONArray channelsArray = new JSONArray();
+				
+				//all good
+				JSONObject msgJSON = JSON.make(
+						"result", "success",
+						"channels", channels
 				);
 				return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
 			}

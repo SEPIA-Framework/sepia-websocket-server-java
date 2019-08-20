@@ -22,7 +22,7 @@ public class SepiaRemoteActionHandler implements ServerMessageHandler {
 	SocketServer server;
 	
 	/**
-	 * Create new handler for SEPIA authentication messages.
+	 * Create new handler for SEPIA messages.
 	 */
 	public SepiaRemoteActionHandler(SocketServer server){
 		this.server = server;
@@ -44,7 +44,7 @@ public class SepiaRemoteActionHandler implements ServerMessageHandler {
 		SocketMessage remoteMsg = new SocketMessage(channelId, 
 				SocketConfig.SERVERNAME, SocketConfig.localName, 		//TODO: change this to msg.sender, msg.senderDeviceId ?? Or do we need this for auth. ?? 
 				receiver, targetDeviceId,
-				(remoteUserId + " sent remoteAction: " + remoteMsgType), TextType.status.name()
+				(remoteUserId + " sent remoteAction: " + remoteMsgType), TextType.status.name()		//TODO: replace with SepiaSocketBroadcaster.makeServerStatusMessag() ??
 		);
 		remoteMsg.data = JSON.make("user", remoteUserId, "type", remoteMsgType, "action", action,
 				"dataType", DataType.remoteAction.name());

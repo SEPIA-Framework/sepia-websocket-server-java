@@ -24,7 +24,7 @@ public class SepiaChannelJoinHandler implements ServerMessageHandler {
 	SocketServer server;
 	
 	/**
-	 * Create new handler for SEPIA authentication messages.
+	 * Create new handler for SEPIA messages.
 	 */
 	public SepiaChannelJoinHandler(SocketServer server){
 		this.server = server;

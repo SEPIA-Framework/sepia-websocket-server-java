@@ -199,6 +199,9 @@ public class SocketChannel {
 		}
 	}
 	
+	/**
+	 * Return all online members of this channel. Note: this can return multiple SocketUsers with same ID (one for each device logged in). 
+	 */
 	public List<SocketUser> getAllOnlineMembers(){
 		List<SocketUser> users = new ArrayList<>();
 		for (String u : members){
@@ -207,6 +210,9 @@ public class SocketChannel {
 		return users;
 	}
 	
+	/**
+	 * Get a set of user IDs of all the users that are members of this channel.
+	 */
 	public Set<String> getAllRegisteredMembersById(){
 		return members;
 	}

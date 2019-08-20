@@ -63,12 +63,16 @@ public class SocketUserPool {
 		}
 	}
 	/**
-	 * Get all users by id or null if no user with this id is present in pool.
+	 * Get all users by id with open session or null if no user with this id is present in pool.
 	 */
 	public static List<SocketUser> getAllUsersById(String id){
 		try{
 			return userPool.entrySet().stream()
-				.filter(e -> e.getValue().getUserId().equalsIgnoreCase(id))
+				.filter(e -> {
+					//SocketUser su = e.getValue();
+					//return (su.getUserSession().isOpen() && su.getUserId().equalsIgnoreCase(id));
+					return (e.getValue().getUserId().equalsIgnoreCase(id));
+				})
 				.map(Map.Entry::getValue)
 				.collect(Collectors.toList());
 
