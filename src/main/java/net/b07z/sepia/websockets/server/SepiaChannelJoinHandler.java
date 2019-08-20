@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 
 import net.b07z.sepia.server.core.tools.JSON;
 import net.b07z.sepia.websockets.common.SocketChannel;
-import net.b07z.sepia.websockets.common.SocketChannelPool;
 import net.b07z.sepia.websockets.common.SocketConfig;
 import net.b07z.sepia.websockets.common.SocketMessage;
 import net.b07z.sepia.websockets.common.SocketUser;

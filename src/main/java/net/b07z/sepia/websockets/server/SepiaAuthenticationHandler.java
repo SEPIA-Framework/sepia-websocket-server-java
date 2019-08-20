@@ -19,7 +19,6 @@ import net.b07z.sepia.server.core.tools.JSON;
 import net.b07z.sepia.server.core.users.Account;
 import net.b07z.sepia.websockets.client.SepiaSocketClient;
 import net.b07z.sepia.websockets.common.SocketChannel;
-import net.b07z.sepia.websockets.common.SocketChannelPool;
 import net.b07z.sepia.websockets.common.SocketConfig;
 import net.b07z.sepia.websockets.common.SocketMessage;
 import net.b07z.sepia.websockets.common.SocketUser;

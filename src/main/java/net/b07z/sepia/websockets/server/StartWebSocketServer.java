@@ -15,7 +15,6 @@ import net.b07z.sepia.server.core.tools.Debugger;
 import net.b07z.sepia.server.core.tools.JSON;
 import net.b07z.sepia.server.core.tools.Timer;
 import net.b07z.sepia.websockets.common.SocketChannel;
-import net.b07z.sepia.websockets.common.SocketChannelPool;
 import net.b07z.sepia.websockets.common.SocketConfig;
 import net.b07z.sepia.websockets.endpoints.ChannelManager;
 

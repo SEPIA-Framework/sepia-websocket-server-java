@@ -15,7 +15,6 @@ import net.b07z.sepia.server.core.data.Role;
 import net.b07z.sepia.server.core.server.ConfigDefaults;
 import net.b07z.sepia.server.core.tools.JSON;
 import net.b07z.sepia.websockets.common.SocketChannel;
-import net.b07z.sepia.websockets.common.SocketChannelPool;
 import net.b07z.sepia.websockets.common.SocketConfig;
 import net.b07z.sepia.websockets.common.SocketMessage;
 import net.b07z.sepia.websockets.common.SocketUser;
@@ -179,10 +178,10 @@ public class SepiaSocketBroadcaster {
     					offlineChannelUsers.remove(su.getUserId());
     				}
     			});
-    			//broadcast to active in channel
+    			//broadcast to active users in channel
     			broadcastMessageToSocketUsers(msg, activeChannelUsers);
     			
-    			//broadcast 'check channel' to online
+    			//broadcast 'check channel' to online users
     			JSONArray data = new JSONArray();
     			JSON.add(data, JSON.make("channelId", channelId));
     			SocketMessage msgUpdateData = makeServerUpdateDataMessage(

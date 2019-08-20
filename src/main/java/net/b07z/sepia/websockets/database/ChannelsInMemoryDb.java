@@ -3,7 +3,7 @@ package net.b07z.sepia.websockets.database;
 import java.util.List;
 
 import net.b07z.sepia.websockets.common.SocketChannel;
-import net.b07z.sepia.websockets.common.SocketChannelPool;
+import net.b07z.sepia.websockets.server.SocketChannelPool;
 
 /**
  * Class that implements {@link ChannelsDatabase} by using in-memory storage.

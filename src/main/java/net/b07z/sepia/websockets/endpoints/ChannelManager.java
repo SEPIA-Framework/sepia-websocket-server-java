@@ -16,8 +16,8 @@ import net.b07z.sepia.server.core.tools.Is;
 import net.b07z.sepia.server.core.tools.JSON;
 import net.b07z.sepia.server.core.users.Account;
 import net.b07z.sepia.websockets.common.SocketChannel;
-import net.b07z.sepia.websockets.common.SocketChannelPool;
 import net.b07z.sepia.websockets.common.SocketConfig;
+import net.b07z.sepia.websockets.server.SocketChannelPool;
 import spark.Request;
 import spark.Response;
 

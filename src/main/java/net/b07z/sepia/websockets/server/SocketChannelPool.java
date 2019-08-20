@@ -1,4 +1,4 @@
-package net.b07z.sepia.websockets.common;
+package net.b07z.sepia.websockets.server;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,6 +14,8 @@ import org.slf4j.LoggerFactory;
 
 import net.b07z.sepia.server.core.tools.JSON;
 import net.b07z.sepia.server.core.tools.Security;
+import net.b07z.sepia.websockets.common.SocketChannel;
+import net.b07z.sepia.websockets.common.SocketConfig;
 
 /**
  * Handle different channels on same webSocketServer.
@@ -103,6 +105,7 @@ public class SocketChannelPool {
 		log.info("New channel has been created by '" + owner + "' with ID: " + channelId); 		//INFO
 		
 		//TODO: store channel
+		//ChannelsDatabase channelsDb = SocketConfig.getDefaultChannelsDatabase();		//TODO: use?
 		System.out.println("Channel to store: " + sc.getJson()); 		//DEBUG
 		
 		return sc;
@@ -130,6 +133,7 @@ public class SocketChannelPool {
 		channelPool.remove(sc.getChannelId());
 		
 		//TODO: delete channel
+		//ChannelsDatabase channelsDb = SocketConfig.getDefaultChannelsDatabase();		//TODO: use?
 		System.out.println("Channel to delete: " + sc.getJson()); 		//DEBUG
 		
 		return true;
