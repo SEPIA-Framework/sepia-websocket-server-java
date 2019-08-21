@@ -214,6 +214,17 @@ public class SocketMessage {
 	}
 	
 	/**
+	 * Get data.dataType value or null.
+	 */
+	public String getDataType(){
+		if (this.data == null){
+			return null;
+		}else{
+			return JSON.getString(this.data, "dataType");
+		}
+	}
+	
+	/**
 	 * Get the value of data.parameters[key] as string or null if not found.
 	 * @param key - key in data.parameters
 	 * @return value or null

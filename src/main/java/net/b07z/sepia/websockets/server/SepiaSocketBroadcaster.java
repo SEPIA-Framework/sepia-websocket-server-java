@@ -190,11 +190,18 @@ public class SepiaSocketBroadcaster {
     			);
     			broadcastMessageToSocketUsers(msgUpdateData, inactiveChannelUsers);
     			
-    			//register missed message
-    			for (String userId : offlineChannelUsers){
-    				SocketChannelHistory.addChannelWithMissedMessagesForUser(userId, channelId);
+    			//build (filtered) channel history and notify users of missed messages
+    			String dataType = msg.getDataType();
+    			if (dataType != null && dataType.equals(DataType.openText.name())){
+	    			//register missed message
+	    			for (String userId : offlineChannelUsers){
+	    				SocketChannelHistory.addChannelWithMissedMessagesForUser(userId, channelId);
+	    			}
+	    			//TODO: how do we notify them?
+	    			
+	    			//store message in channel history
+	    			SocketChannelHistory.addMessageToChannelHistory(channelId, msg);
     			}
-    			//TODO: how do we notify them?
     		}
     	}
     }

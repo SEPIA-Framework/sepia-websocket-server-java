@@ -1,6 +1,7 @@
 package net.b07z.sepia.websockets.server;
 
 import org.eclipse.jetty.websocket.api.Session;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,12 +78,22 @@ public class SepiaChannelJoinHandler implements ServerMessageHandler {
 					        server.broadcastMessage(user, msgListUpdate1);
 						}
 						
+						//get channel data
+						JSONArray channelHistory = null;
+						if (SocketConfig.storeMessagesPerChannel > 0){
+							channelHistory = SocketChannelHistory.getChannelHistoryAsJson(nsc.getChannelId());
+							//TODO: can be null (=error) so handle that ...
+						}
+						
 				        //confirm channel switch
 				        JSONObject data = new JSONObject();
 				        JSON.add(data, "dataType", DataType.joinChannel.name());
 				        JSON.add(data, "channelId", nsc.getChannelId());
 				        JSON.add(data, "channelName", nsc.getChannelName());
 				        JSON.add(data, "givenName", user.getUserName());
+				        if (channelHistory != null){
+				        	JSON.add(data, "channelHistory", channelHistory);
+				        }
 
 				        SocketMessage msgJoinChannel = new SocketMessage("", SocketConfig.SERVERNAME, SocketConfig.localName, 
 				        		user.getUserId(), user.getDeviceId(), 
