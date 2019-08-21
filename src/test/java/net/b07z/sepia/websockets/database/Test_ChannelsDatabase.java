@@ -40,6 +40,9 @@ public class Test_ChannelsDatabase {
 			}
 		}
 		System.out.println("Old entries removed: " + removed);
+		if (removed > 0){
+			return;
+		}
 		//Give database time to refresh
 		System.out.println("Wait for DB refresh...");
 		Debugger.sleep(2000);

@@ -52,7 +52,7 @@ public class SocketChannelHistory {
 	}
 	
 	/**
-	 * Remove a channel from the set of channel that are marked for missed messages.
+	 * Remove a channel from the set of channels that are marked for missed messages.
 	 * @param userId - ID of user that (potentially) has missed messages
 	 * @param channelId - ID of channel to remove
 	 */
@@ -70,4 +70,8 @@ public class SocketChannelHistory {
 	public static void clearSetOfChannelsWithMissedMessages(String userId){
 		channelsWithMissedMessagesForEachUser.remove(userId);
 	}
+	
+	//--- Methods for handling channels content ---
+	
+	
 }

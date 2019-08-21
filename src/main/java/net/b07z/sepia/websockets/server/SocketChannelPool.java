@@ -16,6 +16,7 @@ import net.b07z.sepia.server.core.tools.JSON;
 import net.b07z.sepia.server.core.tools.Security;
 import net.b07z.sepia.websockets.common.SocketChannel;
 import net.b07z.sepia.websockets.common.SocketConfig;
+import net.b07z.sepia.websockets.database.ChannelsDatabase;
 
 /**
  * Handle different channels on same webSocketServer.
@@ -37,6 +38,14 @@ public class SocketChannelPool {
 		return Security.bytearrayToHexString(Security.getSha256(
 				channelCounter.incrementAndGet() + "-" + SocketConfig.localName + "-" + System.currentTimeMillis() 
 		));
+	}
+	
+	/**
+	 * Set a channel pool to start with.
+	 * @param newChannelPool
+	 */
+	public static void setPool(Map<String, SocketChannel> newChannelPool){
+		channelPool = newChannelPool;
 	}
 	
 	/**
@@ -73,6 +82,11 @@ public class SocketChannelPool {
 			log.info("Channel '" + channelId + "' already exists!"); 		//INFO
 			return null;
 		}
+		//has server reach max. number of channels?
+		if (channelPool.size() >= SocketConfig.maxChannelsPerServer){
+			log.error("Server has reached MAXIMUM NUMBER OF CHANNELS.");	//ERROR
+			return null;
+		}
 		String key = "open";
 		if (!isOpenChannel){
 			key = Security.bytearrayToHexString(
@@ -104,9 +118,13 @@ public class SocketChannelPool {
 		
 		log.info("New channel has been created by '" + owner + "' with ID: " + channelId); 		//INFO
 		
-		//TODO: store channel
-		//ChannelsDatabase channelsDb = SocketConfig.getDefaultChannelsDatabase();		//TODO: use?
-		System.out.println("Channel to store: " + sc.getJson()); 		//DEBUG
+		//store channel
+		ChannelsDatabase channelsDb = SocketConfig.getDefaultChannelsDatabase();
+		int resCode = channelsDb.storeChannel(sc);
+		if (resCode != 0){
+			log.error("Failed to store new channel with ID: " + channelId + " - Result code: " + resCode);
+			//TODO: retry later
+		}
 		
 		return sc;
 	}
@@ -130,11 +148,16 @@ public class SocketChannelPool {
 	 * Remove channel from pool.
 	 */
 	public static boolean deleteChannel(SocketChannel sc){
-		channelPool.remove(sc.getChannelId());
+		String channelId = sc.getChannelId();
+		channelPool.remove(channelId);
 		
-		//TODO: delete channel
-		//ChannelsDatabase channelsDb = SocketConfig.getDefaultChannelsDatabase();		//TODO: use?
-		System.out.println("Channel to delete: " + sc.getJson()); 		//DEBUG
+		//delete channel
+		ChannelsDatabase channelsDb = SocketConfig.getDefaultChannelsDatabase();
+		int resCode = channelsDb.removeChannel(channelId);
+		if (resCode != 0){
+			log.error("Failed to delete channel with ID: " + channelId + " - Result code: " + resCode);
+			//TODO: retry later
+		}
 		
 		return true;
 	}

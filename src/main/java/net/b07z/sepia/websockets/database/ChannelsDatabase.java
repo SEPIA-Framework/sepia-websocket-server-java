@@ -1,6 +1,7 @@
 package net.b07z.sepia.websockets.database;
 
 import java.util.List;
+import java.util.Map;
 
 import net.b07z.sepia.websockets.common.SocketChannel;
 
@@ -34,6 +35,13 @@ public interface ChannelsDatabase {
 	 * @return number of removed object or -1 for error
 	 */
 	public long removeAllChannelsOfOwner(String userId);
+	
+	/**
+	 * Get all channels stored in DB.
+	 * @param includeOtherServers - load only channels created on this server or on all servers (of your cluster)?
+	 * @return map of all channels with channel ID as key (can be empty) or null (error)
+	 */
+	public Map<String, SocketChannel> getAllChannles(boolean includeOtherServers);
 	
 	/**
 	 * Get {@link SocketChannel} by ID from database.  

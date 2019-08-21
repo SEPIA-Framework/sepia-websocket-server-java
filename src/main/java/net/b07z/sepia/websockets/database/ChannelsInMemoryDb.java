@@ -1,13 +1,15 @@
 package net.b07z.sepia.websockets.database;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import net.b07z.sepia.websockets.common.SocketChannel;
 import net.b07z.sepia.websockets.server.SocketChannelPool;
 
 /**
  * Class that implements {@link ChannelsDatabase} by using in-memory storage.
- * Basically it just points to {@link SocketChannelPool} methods.<br>
+ * Basically it just points to {@link SocketChannelPool} methods and acts as test implementation for the interface.<br>
  * 
  * NOTE: Will loose all data when server closes or restarts.
  * 
@@ -27,6 +29,11 @@ public class ChannelsInMemoryDb implements ChannelsDatabase {
 	public int storeChannel(SocketChannel socketChannel){
 		SocketChannelPool.addChannel(socketChannel);
 		return 0;
+	}
+	
+	@Override
+	public Map<String, SocketChannel> getAllChannles(boolean includeOtherServers){
+		return new ConcurrentHashMap<>(); 		//return empty Map
 	}
 
 	@Override

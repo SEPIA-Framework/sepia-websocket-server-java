@@ -59,6 +59,7 @@ public class SocketConfig {
 	public static boolean inUserChannelBroadcastOnlyToAssistantAndSelf = true;	//in user private channel don't broadcast to other devices
 	public static int storeMessagesPerChannel = 0;		//messages to store per channel so offline users get to read them when they (re)join the channel
 	public static int maxChannelsPerUser = 10;			//how many channels can a user (non-admin) own?
+	public static int maxChannelsPerServer = 5000; 		//NOTE: this is limited by 'index.max_result_window' (10000) for Elasticsearch. If you increase this you need to adjust the ES methods! 
 	
 	//----------database---------
 	

@@ -2,6 +2,8 @@ package net.b07z.sepia.websockets.database;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -70,6 +72,49 @@ public class ChannelsElasticsearchDb implements ChannelsDatabase {
 			log.error("storeChannel - failed with code " + code + " for channelId: " + socketChannel.getChannelId());
 			return 2;
 		}
+	}
+	
+	@Override
+	public Map<String, SocketChannel> getAllChannles(boolean includeOtherServers){
+		Map<String, SocketChannel> allChannelsById = new ConcurrentHashMap<>();
+		
+		JSONObject queryJson;
+		if (includeOtherServers){
+			queryJson = JSON.make(
+					//"_source", JSON.makeArray("channel_id", "channel_name", "owner", "members"),
+					"query", JSON.make("match_all", new JSONObject())
+			);
+		}else{
+			List<QueryElement> matches = new ArrayList<>(); 
+			matches.add(new QueryElement("server_id", SocketConfig.localName));
+			queryJson = EsQueryBuilder.getBoolMustMatch(matches);
+		}
+		JSON.put(queryJson, "from", 0);
+		JSON.put(queryJson, "size", SocketConfig.maxChannelsPerServer);
+		
+		JSONObject result = this.es.searchByJson(ES_CHANNELS_PATH, JSON.make(
+				"from", 0, 
+				"size", SocketConfig.maxChannelsPerServer,
+				//"_source", JSON.makeArray("channel_id", "channel_name", "owner", "members"),
+				"query", JSON.make("match_all", new JSONObject())
+		).toJSONString());
+		
+		if (!Connectors.httpSuccess(result)){
+			log.error("Failed to load channels from DB!");
+			return null;
+		}else{
+			JSONArray channelArray = JSON.getJArray(result, new String[]{"hits", "hits"});
+			if (Is.notNullOrEmpty(channelArray)){
+				for (int i=0; i<channelArray.size(); i++){
+					JSONObject channelRes = JSON.getJObject(channelArray, i);
+					JSONObject channelData = JSON.getJObject(channelRes, "_source");
+					SocketChannel sc = new SocketChannel(channelData);
+					allChannelsById.put(sc.getChannelId(), sc);
+				}
+			}
+		}
+		log.info("Loaded " + allChannelsById.size() + " channels from DB.");
+		return allChannelsById;
 	}
 
 	@Override
