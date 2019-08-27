@@ -1,11 +1,15 @@
 package net.b07z.sepia.websockets.server;
 
+import java.util.Map;
+
 import org.eclipse.jetty.websocket.api.Session;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.b07z.sepia.server.core.tools.Converters;
+import net.b07z.sepia.server.core.tools.Is;
 import net.b07z.sepia.server.core.tools.JSON;
 import net.b07z.sepia.websockets.common.SocketChannel;
 import net.b07z.sepia.websockets.common.SocketConfig;
@@ -81,7 +85,12 @@ public class SepiaChannelJoinHandler implements ServerMessageHandler {
 						//get channel data
 						JSONArray channelHistory = null;
 						if (SocketConfig.storeMessagesPerChannel > 0){
-							channelHistory = SocketChannelHistory.getChannelHistoryAsJson(nsc.getChannelId());
+							Map<String, Object> filter = null;
+							JSONObject channelHistoryFilter = JSON.getJObject(msg.data, "channelHistoryFilter");
+							if (Is.notNullOrEmpty(channelHistoryFilter)){
+								filter = Converters.json2HashMap(channelHistoryFilter);
+							}
+							channelHistory = SocketChannelHistory.getChannelHistoryAsJson(nsc.getChannelId(), filter);
 							//TODO: can be null (=error) so handle that ...
 						}
 						
@@ -110,6 +119,9 @@ public class SepiaChannelJoinHandler implements ServerMessageHandler {
 				        		DataType.welcome, true
 				        );
 				        server.broadcastMessage(user, msgListUpdate2);
+				        
+				        //clear missed messages marker
+				        SocketChannelHistory.removeChannelFromMissedMessagesSet(user.getUserId(), nsc.getChannelId());
 					
 					}else{
 						//broadcast fail of channel join

@@ -112,17 +112,30 @@ public class SocketChannelHistory {
 	/**
 	 * Get all messages cached for a certain channel as JSONArray.
 	 * @param channelId - ID of channel
+	 * @param filter - Map of filters like "notOlderThan" (long) 
 	 * @return array of messages (can be empty) or null (error)
 	 */
-	public static JSONArray getChannelHistoryAsJson(String channelId){
+	public static JSONArray getChannelHistoryAsJson(String channelId, Map<String, Object> filter){
 		ConcurrentLinkedQueue<JSONObject> messagesQueue = lastMessagesStoredForEachChannel.get(channelId);
+		final long notOlderThan;
+		if (filter != null){
+			if (filter.containsKey("notOlderThan")){
+				notOlderThan = (long) filter.get("notOlderThan");
+			}else{
+				notOlderThan = 0;
+			}
+		}else{
+			notOlderThan = 0;
+		}
 		if (messagesQueue == null){
 			return new JSONArray();
 			//NOTE: we do this to distinguish error and "real" empty queue later
 		}else{
 			JSONArray ja = new JSONArray();
 			messagesQueue.forEach(socketMessage -> {
-				JSON.add(ja, socketMessage); 			//TODO: filter content? (again)
+				if (notOlderThan == 0 || (JSON.getLongOrDefault(socketMessage, "timeUNIX", 0) >= notOlderThan)){
+					JSON.add(ja, socketMessage); 			//TODO: filter content? (again)
+				}
 			});
 			return ja;
 		}

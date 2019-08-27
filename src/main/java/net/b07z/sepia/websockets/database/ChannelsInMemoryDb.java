@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.json.simple.JSONObject;
+
 import net.b07z.sepia.websockets.common.SocketChannel;
 import net.b07z.sepia.websockets.server.SocketChannelPool;
 
@@ -32,8 +34,13 @@ public class ChannelsInMemoryDb implements ChannelsDatabase {
 	}
 	
 	@Override
+	public int updateChannel(String channelId, JSONObject updateData){
+		return 0;		//NOTE: does nothing (intentionally)
+	}
+	
+	@Override
 	public Map<String, SocketChannel> getAllChannles(boolean includeOtherServers){
-		return new ConcurrentHashMap<>(); 		//return empty Map
+		return new ConcurrentHashMap<>(); 		//NOTE: return empty Map
 	}
 
 	@Override

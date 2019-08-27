@@ -130,6 +130,29 @@ public class SocketChannelPool {
 	}
 	
 	/**
+	 * Update channel with new member.
+	 * @param channelId
+	 * @param members
+	 * @return
+	 */
+	public static boolean addMembersToChannel(SocketChannel sc, List<String> members){
+		//update channel
+		for (String m : members){
+			sc.addUser(m, sc.getChannelKey());	//we should already have permission here, so we can use sc.getChannelKey()
+		}
+		String channelId = sc.getChannelId();
+		ChannelsDatabase channelsDb = SocketConfig.getDefaultChannelsDatabase();
+		int resCode = channelsDb.updateChannel(channelId, sc.getJson());
+		if (resCode != 0){
+			log.error("Failed to update channel with ID: " + channelId + " - Result code: " + resCode);
+			//TODO: retry later
+			return false;
+		}else{
+			return true;
+		}
+	}
+	
+	/**
 	 * Add channel to pool.
 	 */
 	public static void addChannel(SocketChannel sc){

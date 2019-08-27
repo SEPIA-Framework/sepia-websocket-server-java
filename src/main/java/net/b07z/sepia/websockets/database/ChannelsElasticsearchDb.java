@@ -75,6 +75,12 @@ public class ChannelsElasticsearchDb implements ChannelsDatabase {
 	}
 	
 	@Override
+	public int updateChannel(String channelId, JSONObject updateData){
+		//NOTE: channelId is ES ID as well
+		return this.es.updateItemData(SocketConfig.DB_CHAT, ES_CHANNELS_TYPE, channelId, updateData);
+	}
+	
+	@Override
 	public Map<String, SocketChannel> getAllChannles(boolean includeOtherServers){
 		Map<String, SocketChannel> allChannelsById = new ConcurrentHashMap<>();
 		

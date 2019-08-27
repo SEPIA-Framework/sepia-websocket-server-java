@@ -3,6 +3,8 @@ package net.b07z.sepia.websockets.database;
 import java.util.List;
 import java.util.Map;
 
+import org.json.simple.JSONObject;
+
 import net.b07z.sepia.websockets.common.SocketChannel;
 
 public interface ChannelsDatabase {
@@ -21,6 +23,14 @@ public interface ChannelsDatabase {
 	 * @return result code: 0) all good 1) connection error 2) unknown error
 	 */
 	public int storeChannel(SocketChannel socketChannel);
+	
+	/**
+	 * Update previously stored {@link SocketChannel}.
+	 * @param channelId - ID of channel to update 
+	 * @param updateData - new/changed (partial) channel data
+	 * @return result code: 0) all good 1) connection error 2) unknown error
+	 */
+	public int updateChannel(String channelId, JSONObject updateData);
 	
 	/**
 	 * Remove channel from database.

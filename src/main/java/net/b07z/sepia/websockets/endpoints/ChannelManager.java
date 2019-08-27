@@ -1,5 +1,6 @@
 package net.b07z.sepia.websockets.endpoints;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -240,8 +241,8 @@ public class ChannelManager {
 				JSONObject msgJSON = JSON.make("result", "fail", "error", "not authorized to join channel.");
 				return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
 			}else{
-				//add to channel
-				sc.addUser(userId, sc.getChannelKey());		//we already have permission so we can use sc.getChannelKey() here
+				//add member and store changes
+				SocketChannelPool.addMembersToChannel(sc, Arrays.asList(userId));
 				//all good
 				JSONObject msgJSON = JSON.make(
 						"result", "success",
