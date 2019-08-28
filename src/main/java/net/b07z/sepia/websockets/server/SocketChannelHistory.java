@@ -103,6 +103,7 @@ public class SocketChannelHistory {
 			JSONObject msg = SepiaSocketBroadcaster.makeSafeMessage(socketMessage);
 			//add
 			messagesQueue.add(msg);
+			//remove oldest
 			if (size.incrementAndGet() > SocketConfig.storeMessagesPerChannel){
 				messagesQueue.poll();
 			}

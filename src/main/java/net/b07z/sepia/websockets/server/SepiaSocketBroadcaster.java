@@ -94,6 +94,38 @@ public class SepiaSocketBroadcaster {
     	}
     }
     
+    /**
+     * Convert assistant message to openText message e.g. for "safe" channel history.
+     * @return new {@link SocketMessage} or null
+     */
+    public static SocketMessage buildOpenTextFromAssistantMessage(SocketMessage msg){
+    	try {
+    		JSONObject nuData = new JSONObject();
+    		
+    		//we can keep card data
+    		JSONObject assistAnswer = JSON.getJObject(msg.data, "assistAnswer");
+    		boolean hasCard = JSON.getBoolean(assistAnswer, "hasCard");
+    		if (hasCard){
+    			JSON.put(nuData, "assistAnswer", JSON.make(
+    					"hasCard", true,
+    					"cardInfo", assistAnswer.get("cardInfo")
+    			));
+    		}
+    		//System.out.println("assistAnswer: " + assistAnswer);		//DEBUG
+    		
+    		//build new msg
+	    	SocketMessage nuMsg = new SocketMessage(msg.channelId, msg.sender, msg.senderDeviceId, msg.receiver, msg.receiverDeviceId, nuData);
+	    	nuMsg.msgId = msg.msgId;
+	    	nuMsg.text = JSON.getString(assistAnswer, "answer_clean");
+	    	nuMsg.setDataType(DataType.openText);
+	    	return nuMsg;
+	    	
+    	}catch (Exception e){
+    		e.printStackTrace();
+    		return null;
+    	}
+    }
+    
     //When was the last broadcast
     public static long getLastBroadcastTime(){
     	return timeOfLastBroadcast;
@@ -168,15 +200,14 @@ public class SepiaSocketBroadcaster {
     		}else{
     			List<SocketUser> inactiveChannelUsers = new ArrayList<>();
     			List<SocketUser> activeChannelUsers = new ArrayList<>();
-    			Set<String> offlineChannelUsers = new HashSet<>(sc.getAllRegisteredMembersById());
-    			offlineChannelUsers.remove(msg.sender);
+    			Set<String> offlineOrInactiveChannelUsers = new HashSet<>(sc.getAllRegisteredMembersById());
+    			offlineOrInactiveChannelUsers.remove(msg.sender);
     			sc.getAllOnlineMembers().forEach((su) -> {
     				if (su.isActiveInChannelOrOmnipresent(channelId)){
     					activeChannelUsers.add(su);
-    					offlineChannelUsers.remove(su.getUserId());
+    					offlineOrInactiveChannelUsers.remove(su.getUserId());
     				}else{
     					inactiveChannelUsers.add(su);
-    					offlineChannelUsers.remove(su.getUserId());
     				}
     			});
     			//broadcast to active users in channel
@@ -192,15 +223,32 @@ public class SepiaSocketBroadcaster {
     			
     			//build (filtered) channel history and notify users of missed messages
     			String dataType = msg.getDataType();
-    			if (dataType != null && dataType.equals(DataType.openText.name())){
-	    			//register missed message
-	    			for (String userId : offlineChannelUsers){
-	    				SocketChannelHistory.addChannelWithMissedMessagesForUser(userId, channelId);
-	    			}
-	    			//TODO: how do we notify them?
-	    			
-	    			//store message in channel history
-	    			SocketChannelHistory.addMessageToChannelHistory(channelId, msg);
+    			if (dataType != null){
+    				boolean registerAsMissed = false;
+    				if (msg.receiver == null && (dataType.equals(DataType.assistAnswer.name()) || dataType.equals(DataType.assistFollowUp.name()))){
+						//convert assistant to "normal" text message - its for safety and to prevent uncontrollable command executions (TODO: improve)
+    					SocketMessage newMsg = buildOpenTextFromAssistantMessage(msg);
+    					if (newMsg != null){
+    		    			//store NON-PRIVATE message in channel history
+   		    				SocketChannelHistory.addMessageToChannelHistory(channelId, newMsg);
+   		    				registerAsMissed = true;
+    					}
+					}else if (dataType.equals(DataType.openText.name())){
+		    			//store NON-PRIVATE message in channel history
+		    			if (msg.receiver == null){
+		    				SocketChannelHistory.addMessageToChannelHistory(channelId, msg);
+		    			}
+		    			registerAsMissed = true;
+    				}
+    				if (registerAsMissed){
+    					//register missed message for inactive and offline users
+		    			for (String userId : offlineOrInactiveChannelUsers){
+		    				//NON-PRIVATE or ID match
+		    				if (msg.receiver == null || msg.receiver.equals(userId)){
+		    					SocketChannelHistory.addChannelWithMissedMessagesForUser(userId, channelId);
+		    				}
+		    			}
+    				}
     			}
     		}
     	}

@@ -214,7 +214,7 @@ public class SocketMessage {
 	}
 	
 	/**
-	 * Get data.dataType value or null.
+	 * Get data.dataType ({@link DataType}) value or null.
 	 */
 	public String getDataType(){
 		if (this.data == null){
@@ -222,6 +222,13 @@ public class SocketMessage {
 		}else{
 			return JSON.getString(this.data, "dataType");
 		}
+	}
+	/**
+	 * Set {@link DataType} of message.
+	 * @param dt
+	 */
+	public void setDataType(DataType dt){
+		addData("dataType", dt.name());
 	}
 	
 	/**
