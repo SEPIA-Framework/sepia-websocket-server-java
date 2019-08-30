@@ -52,6 +52,7 @@ public class SocketMessage {
 	private long id;				//TODO: should be combined with clientID. Can it overflow?, note: not yet submitted to client ...
 	public String msgId = ""; 		//id defined by client to follow the message on reply
 	public String channelId = ""; 	//broadcast to what channel?
+	public String serverId = "";	//server where this channel lives
 	
 	public String text;
 	public String textType;
@@ -76,6 +77,7 @@ public class SocketMessage {
 	 */
 	public SocketMessage(){
 		id = idPool.incrementAndGet();	if (id > (Long.MAX_VALUE - 1000)) idPool.set(Long.MIN_VALUE);
+		this.serverId = SocketConfig.localName;
 	};
 	/**
 	 * Create a message that can be sent over the webSocket connection.<br>
@@ -101,6 +103,7 @@ public class SocketMessage {
 		
 		this.timeStampUNIX = System.currentTimeMillis();
 		this.timeStampHHmmss = new SimpleDateFormat("HH:mm:ss").format(new Date());
+		this.serverId = SocketConfig.localName;
 	}
 	/**
 	 * Create a message that can be sent over the webSocket connection.<br>
@@ -124,6 +127,7 @@ public class SocketMessage {
 				
 		this.timeStampUNIX = System.currentTimeMillis();
 		this.timeStampHHmmss = new SimpleDateFormat("HH:mm:ss").format(new Date());
+		this.serverId = SocketConfig.localName;
 	}
 	/**
 	 * Create a message that can be sent over the webSocket connection.<br>
@@ -157,6 +161,7 @@ public class SocketMessage {
 		
 		this.timeStampUNIX = System.currentTimeMillis();
 		this.timeStampHHmmss = new SimpleDateFormat("HH:mm:ss").format(new Date());
+		this.serverId = SocketConfig.localName;
 	}
 	
 	@Override
@@ -255,8 +260,10 @@ public class SocketMessage {
 	 */
 	public JSONObject getJSON(){
 		JSONObject message = new JSONObject();
+		//TODO: add internal id (this.id)? If we do how do we import it later?
 		message.put("msgId", msgId);
 		message.put("channelId", channelId);
+		message.put("serverId", serverId);
 		message.put("sender", sender);
 		if (senderDeviceId != null && !senderDeviceId.isEmpty()) message.put("senderDeviceId", senderDeviceId);
 		if (senderType != null && !senderType.isEmpty()) message.put("senderType", senderType);
@@ -283,9 +290,10 @@ public class SocketMessage {
 		JSONObject msgJson = (JSONObject) parser.parse(msg);
 		
 		SocketMessage imported = new SocketMessage();
-		
+
 		imported.msgId = (String) msgJson.get("msgId");
 		imported.channelId = (String) msgJson.get("channelId");
+		imported.serverId = (String) msgJson.get("serverId");
 		imported.sender = (String) msgJson.get("sender"); 			//will be overwritten during broadcast to all to make sure the client cannot fake it
 		imported.senderType = (String) msgJson.get("senderType");	//TODO: can be faked, do we care? Type server will be prohibited though
 		imported.senderDeviceId = (String) msgJson.get("senderDeviceId");
