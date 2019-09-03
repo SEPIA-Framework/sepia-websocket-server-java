@@ -1,6 +1,7 @@
 package net.b07z.sepia.websockets.common;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -71,6 +72,15 @@ public class SocketMessage {
 	
 	public JSONArray userList;
 	public Collection<SocketUser> userListCollection;
+	
+	//-------- comparators --------
+	public static class SortByTimestamp implements Comparator<SocketMessage>{ 
+		@Override
+	    public int compare(SocketMessage a, SocketMessage b){ 
+	        return (int) (a.timeStampUNIX - b.timeStampUNIX); 
+	    } 
+	}
+	//-----------------------------
 	
 	/**
 	 * Empty constructor to be filled manually. Only sets message id.
@@ -288,7 +298,12 @@ public class SocketMessage {
 	public static SocketMessage importJSON(String msg) throws Exception{
 		JSONParser parser = new JSONParser();
 		JSONObject msgJson = (JSONObject) parser.parse(msg);
-		
+		return importJSON(msgJson);
+	}
+	/**
+	 * Import a JSON to make a SocketMessage.
+	 */
+	public static SocketMessage importJSON(JSONObject msgJson) throws Exception{
 		SocketMessage imported = new SocketMessage();
 
 		imported.msgId = (String) msgJson.get("msgId");

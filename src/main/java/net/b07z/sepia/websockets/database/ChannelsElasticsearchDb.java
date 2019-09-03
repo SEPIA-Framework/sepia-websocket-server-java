@@ -23,7 +23,7 @@ public class ChannelsElasticsearchDb implements ChannelsDatabase {
 
 	private static final Logger log = LoggerFactory.getLogger(ChannelsElasticsearchDb.class);
 	private static final String ES_CHANNELS_TYPE = "channels";
-	private static final String ES_CHANNELS_PATH = SocketConfig.DB_CHAT + "/" + ES_CHANNELS_TYPE;
+	private static final String ES_CHANNELS_PATH = SocketConfig.DB_CHAT_CHANNELS + "/" + ES_CHANNELS_TYPE;
 
 	String esServerUrl = "";
 	Elasticsearch es;
@@ -65,7 +65,7 @@ public class ChannelsElasticsearchDb implements ChannelsDatabase {
 
 	@Override
 	public int storeChannel(SocketChannel socketChannel){
-		int code = this.es.setItemData(SocketConfig.DB_CHAT, ES_CHANNELS_TYPE, socketChannel.getChannelId(), socketChannel.getJson());
+		int code = this.es.setItemData(SocketConfig.DB_CHAT_CHANNELS, ES_CHANNELS_TYPE, socketChannel.getChannelId(), socketChannel.getJson());
 		if (code == 0 || code == 1){
 			return code;
 		}else{
@@ -77,7 +77,7 @@ public class ChannelsElasticsearchDb implements ChannelsDatabase {
 	@Override
 	public int updateChannel(String channelId, JSONObject updateData){
 		//NOTE: channelId is ES ID as well
-		return this.es.updateItemData(SocketConfig.DB_CHAT, ES_CHANNELS_TYPE, channelId, updateData);
+		return this.es.updateItemData(SocketConfig.DB_CHAT_CHANNELS, ES_CHANNELS_TYPE, channelId, updateData);
 	}
 	
 	@Override
@@ -127,7 +127,7 @@ public class ChannelsElasticsearchDb implements ChannelsDatabase {
 	public SocketChannel getChannelWithId(String channelId){
 		//access directly by unique channel ID
 		JSONObject data = new JSONObject();
-		data = this.es.getItem(SocketConfig.DB_CHAT, ES_CHANNELS_TYPE, channelId);
+		data = this.es.getItem(SocketConfig.DB_CHAT_CHANNELS, ES_CHANNELS_TYPE, channelId);
 		
 		if (Connectors.httpSuccess(data)){
 			JSONObject channelData = JSON.getJObject(data, "_source");

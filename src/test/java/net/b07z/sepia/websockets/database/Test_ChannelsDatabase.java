@@ -27,6 +27,7 @@ public class Test_ChannelsDatabase {
 		
 		boolean useElasticsearch = true; //(args != null && args.length > 0 && args[0].equalsIgnoreCase("elasticsearch"));
 		
+		//NOTE: InMemoryDb is a dummy and will not return any data at the moment
 		ChannelsDatabase chanDb = (useElasticsearch)? getElasticsearchDb() : getInMemoryDb();
 		
 		//clean-up first
@@ -41,6 +42,7 @@ public class Test_ChannelsDatabase {
 		}
 		System.out.println("Old entries removed: " + removed);
 		if (removed > 0){
+			System.out.println("Restart for full run plz.");
 			return;
 		}
 		//Give database time to refresh

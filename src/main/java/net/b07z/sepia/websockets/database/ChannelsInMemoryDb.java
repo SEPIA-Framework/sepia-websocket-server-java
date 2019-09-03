@@ -1,5 +1,6 @@
 package net.b07z.sepia.websockets.database;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -10,10 +11,10 @@ import net.b07z.sepia.websockets.common.SocketChannel;
 import net.b07z.sepia.websockets.server.SocketChannelPool;
 
 /**
- * Class that implements {@link ChannelsDatabase} by using in-memory storage.
- * Basically it just points to {@link SocketChannelPool} methods and acts as test implementation for the interface.<br>
+ * Dummy class that implements {@link ChannelsDatabase} but returns no data since {@link SocketChannelPool} is already handling everything in-memory.
+ * This just acts as a test implementation and blind plug (prevents any database access).<br>
  * 
- * NOTE: Will loose all data when server closes or restarts.
+ * NOTE: At some point we might want to convert {@link SocketChannelPool} to implement the interface and remove this class.
  * 
  * @author Florian Quirin
  *
@@ -24,18 +25,17 @@ public class ChannelsInMemoryDb implements ChannelsDatabase {
 
 	@Override
 	public boolean hasChannelWithId(String channelId) throws Exception {
-		return SocketChannelPool.hasChannelId(channelId);
+		return false;
 	}
 
 	@Override
 	public int storeChannel(SocketChannel socketChannel){
-		SocketChannelPool.addChannel(socketChannel);
 		return 0;
 	}
 	
 	@Override
 	public int updateChannel(String channelId, JSONObject updateData){
-		return 0;		//NOTE: does nothing (intentionally)
+		return 0;
 	}
 	
 	@Override
@@ -45,37 +45,21 @@ public class ChannelsInMemoryDb implements ChannelsDatabase {
 
 	@Override
 	public SocketChannel getChannelWithId(String channelId){
-		return SocketChannelPool.getChannel(channelId);
+		return null;
 	}
 
 	@Override
 	public List<SocketChannel> getAllChannelsOwnedBy(String userId){
-		return SocketChannelPool.getAllChannelsOwnedBy(userId);
+		return new ArrayList<SocketChannel>();	//NOTE: return empty List (not thread-safe)
 	}
 
 	@Override
 	public int removeChannel(String channelId){
-		try{
-			SocketChannelPool.deleteChannel(getChannelWithId(channelId));
-			return 0;
-		}catch (Exception e){
-			return 2;
-		}
+		return 0;
 	}
 
 	@Override
 	public long removeAllChannelsOfOwner(String userId) {
-		List<SocketChannel> channels = getAllChannelsOwnedBy(userId);
-		if (channels == null){
-			return -1;
-		}else{
-			for (SocketChannel sc : channels){
-				int code = removeChannel(sc.getChannelId());
-				if (code != 0){
-					return -1;
-				}
-			}
-		}
-		return channels.size();
+		return 0;
 	}
 }

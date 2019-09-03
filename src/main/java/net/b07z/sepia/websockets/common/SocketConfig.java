@@ -71,7 +71,9 @@ public class SocketConfig {
 	public static String defaultRegion = REGION_CUSTOM;				//**Region for different cloud services (e.g. AWS or local)
 		
 	//DB structure/indices
-	public static final String DB_CHAT = "chat";			//chat channel and content
+	public static final String DB_CHAT_CHANNELS = "chat";			//chat channels - NOTE: the name originates from the old index structure
+	public static final String DB_CHAT_MESSAGES = "chat-messages";	//chat messages
+	public static final String DB_CHAT_USERS = "chat-users";		//chat users
 	
 	//Getters
 	public static ChannelsDatabase getDefaultChannelsDatabase(){
