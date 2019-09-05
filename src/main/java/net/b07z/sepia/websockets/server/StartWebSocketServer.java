@@ -156,6 +156,8 @@ public class StartWebSocketServer {
         post("/joinChannel", (request, response) -> 	ChannelManager.joinChannel(request, response));
         post("/deleteChannel", (request, response) -> 	ChannelManager.deleteChannel(request, response));
         post("/getAvailableChannels", (request, response) -> 	ChannelManager.getAvailableChannels(request, response));
+        post("/getChannelHistoryStatistic", (request, response) -> 	ChannelManager.getChannelHistoryStatistic(request, response));
+        post("/removeOutdatedChannelMessages", (request, response) -> 	ChannelManager.removeOutdatedChannelMessages(request, response));
         //TODO:
         //getChannel, getChannelData
         
