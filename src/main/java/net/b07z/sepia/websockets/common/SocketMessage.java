@@ -74,7 +74,7 @@ public class SocketMessage {
 	public Collection<SocketUser> userListCollection;
 	
 	//-------- comparators --------
-	public static class SortByTimestamp implements Comparator<SocketMessage>{ 
+	public static class SortByTimestampOldToNew implements Comparator<SocketMessage>{ 
 		@Override
 	    public int compare(SocketMessage a, SocketMessage b){ 
 	        return (int) (a.timeStampUNIX - b.timeStampUNIX); 

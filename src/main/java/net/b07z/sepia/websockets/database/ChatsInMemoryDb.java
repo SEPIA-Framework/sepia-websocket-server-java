@@ -1,7 +1,6 @@
 package net.b07z.sepia.websockets.database;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -21,13 +20,13 @@ import net.b07z.sepia.websockets.server.SocketChannelHistory;
 public class ChatsInMemoryDb implements ChatsDatabase {
 
 	@Override
-	public int updateChannelsWithMissedMessagesForUser(String userId, Set<String> channelIds){
+	public int updateChannelsWithMissedMessagesForUser(String userId, Set<String> channelIds, boolean userReceivedNote){
 		return 0;
 	}
 
 	@Override
-	public Set<String> getAllChannelsWithMissedMassegesForUser(String userId){
-		return new HashSet<String>();
+	public JSONObject getAllChannelsWithMissedMassegesForUser(String userId){
+		return new JSONObject();
 	}
 
 	@Override

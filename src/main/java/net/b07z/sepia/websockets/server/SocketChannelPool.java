@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -41,7 +42,7 @@ public class SocketChannelPool {
 	}
 	
 	/**
-	 * Set a channel pool to start with.
+	 * Set a channel pool to start with. Usually loaded during server start.
 	 * @param newChannelPool
 	 */
 	public static void setPool(Map<String, SocketChannel> newChannelPool){
@@ -182,7 +183,16 @@ public class SocketChannelPool {
 			//TODO: retry later
 		}
 		
+		//TODO: remove all pending missed messages for this channel
+		
 		return true;
+	}
+	
+	/**
+	 * Return all channel IDs known to this server.
+	 */
+	public static Set<String> getAllRegisteredChannelIds(){
+		return channelPool.keySet();
 	}
 	
 	/**

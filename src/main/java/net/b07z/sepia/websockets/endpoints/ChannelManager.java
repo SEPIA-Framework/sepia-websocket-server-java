@@ -114,12 +114,12 @@ public class ChannelManager {
 			}else{
 				//refuse
 				JSONObject msgJSON = JSON.make("result", "fail", "error", "not authorized, missing required role");
-				return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 404);
+				return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 403);
 			}
 		}else{
 			//refuse
 			JSONObject msgJSON = JSON.make("result", "fail", "error", "not authorized");
-			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 404);
+			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 403);
 		}
     }
     
@@ -183,7 +183,7 @@ public class ChannelManager {
 		}else{
 			//refuse
 			JSONObject msgJSON = JSON.make("result", "fail", "error", "not authorized.");
-			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 404);
+			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 403);
 		}
     }
     
@@ -255,7 +255,7 @@ public class ChannelManager {
 		}else{
 			//refuse
 			JSONObject msgJSON = JSON.make("result", "fail", "error", "not authorized.");
-			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 404);
+			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 403);
 		}
     }
     
@@ -293,7 +293,7 @@ public class ChannelManager {
 		}else{
 			//refuse
 			JSONObject msgJSON = JSON.make("result", "fail", "error", "not authorized.");
-			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 404);
+			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 403);
 		}
     }
     
@@ -331,7 +331,81 @@ public class ChannelManager {
 		}else{
 			//refuse
 			JSONObject msgJSON = JSON.make("result", "fail", "error", "not authorized.");
-			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 404);
+			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 403);
 		}
     }
+    
+    /**
+     * Create a new channel.
+     */
+    public static String getChannelHistoryStatistic(Request request, Response response){
+    	//get parameters (or throw error)
+    	RequestParameters params = new RequestPostParameters(request);
+    	//authenticate
+    	Account userAccount = new Account();
+		if (userAccount.authenticate(params)){
+			//must be superuser
+			if (userAccount.hasRole(Role.user.name())){
+				JSONArray data = SocketChannelHistory.getChannelHistoryInfo();
+				if (Is.nullOrEmpty(data)){
+					JSONObject msgJSON = JSON.make(
+							"result", "fail",
+							"error", "data was empty, maybe no channels with history exist or data was not cached yet. Check server log for errors!"
+					);
+					return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
+				}else{
+					JSONObject msgJSON = JSON.make(
+							"result", "success",	
+							"info", SocketChannelHistory.getChannelHistoryInfo()
+					);
+					return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);	
+				}
+			}else{
+				//refuse
+				JSONObject msgJSON = JSON.make("result", "fail", "error", "not authorized, missing required role");
+				return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 403);
+			}
+		}else{
+			//refuse
+			JSONObject msgJSON = JSON.make("result", "fail", "error", "not authorized");
+			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 403);
+		}
+    }
+
+    /**
+     * Clean up old channel history, e.g. messages that were once polled from cache and marked for deletion.  
+     */
+	public static Object removeOutdatedChannelMessages(Request request, Response response){
+		//get parameters (or throw error)
+    	RequestParameters params = new RequestPostParameters(request);
+    	//authenticate
+    	Account userAccount = new Account();
+		if (userAccount.authenticate(params)){
+			//must be superuser
+			if (userAccount.hasRole(Role.user.name())){
+				JSONObject res = SocketChannelHistory.cleanUpOldChannelHistories();
+				if (res != null){
+					JSONObject msgJSON = JSON.make(
+							"result", "success",
+							"info", res
+					);
+					return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
+				}else{
+					JSONObject msgJSON = JSON.make(
+							"result", "fail",
+							"error", "no outdated data was removed. Reason unknown, check server logs plz."
+					);
+					return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
+				}
+			}else{
+				//refuse
+				JSONObject msgJSON = JSON.make("result", "fail", "error", "not authorized, missing required role");
+				return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 403);
+			}
+		}else{
+			//refuse
+			JSONObject msgJSON = JSON.make("result", "fail", "error", "not authorized");
+			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 403);
+		}
+	}
 }

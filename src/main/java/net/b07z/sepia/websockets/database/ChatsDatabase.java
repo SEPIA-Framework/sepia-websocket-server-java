@@ -19,16 +19,17 @@ public interface ChatsDatabase {
 	 * Update/create (overwrite) set with channels that should be checked for messages by user.
 	 * @param userId - user who missed a message
 	 * @param channelIds - set of channel IDs
+	 * @param userReceivedNote - set this to true if you update the set because user checked the channel (and hopefully saw messages)
 	 * @return result code: 0) all good 1) connection error 2) unknown error
 	 */
-	public int updateChannelsWithMissedMessagesForUser(String userId, Set<String> channelIds);
+	public int updateChannelsWithMissedMessagesForUser(String userId, Set<String> channelIds, boolean userReceivedNote);
 	
 	/**
 	 * Return all channels that should be checked by user for missed messages.
 	 * @param userId - user might have missed a message
-	 * @return set (can be empty) or null (error)
+	 * @return JSONObject with channels 'checkChannels' array (can be empty) and other user data (e.g. 'lastMissedMessage') or null (error)
 	 */
-	public Set<String> getAllChannelsWithMissedMassegesForUser(String userId);
+	public JSONObject getAllChannelsWithMissedMassegesForUser(String userId);
 
 	/**
 	 * Store a "safe" socket message as JSON in DB.
@@ -40,7 +41,7 @@ public interface ChatsDatabase {
 	/**
 	 * Get all stored messages of a channel optionally with range filter.
 	 * @param channelId - ID of channel
-	 * @param notOlderThan - get only messages that are not older than this UNIX timestamp (use 0 for no filter)
+	 * @param notOlderThanUNIX - get only messages that are not older than this UNIX timestamp (use 0 for no filter)
 	 * @return list (can be empty) or null (error)
 	 */
 	public List<SocketMessage> getAllMessagesOfChannel(String channelId, long notOlderThanUNIX);

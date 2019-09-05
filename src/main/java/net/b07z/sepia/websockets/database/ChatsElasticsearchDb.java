@@ -1,10 +1,9 @@
 package net.b07z.sepia.websockets.database;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
-
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
@@ -12,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import net.b07z.sepia.server.core.database.Elasticsearch;
 import net.b07z.sepia.server.core.tools.Connectors;
+import net.b07z.sepia.server.core.tools.Debugger;
 import net.b07z.sepia.server.core.tools.EsQueryBuilder;
 import net.b07z.sepia.server.core.tools.JSON;
 import net.b07z.sepia.server.core.tools.EsQueryBuilder.QueryElement;
@@ -38,49 +38,67 @@ public class ChatsElasticsearchDb implements ChatsDatabase {
 		this.esServerUrl = serverUrl;
 		this.es = new Elasticsearch(this.esServerUrl);
 	}
+	
+	//--- user data ---
 
 	@Override
-	public int updateChannelsWithMissedMessagesForUser(String userId, Set<String> channelIds){
+	public int updateChannelsWithMissedMessagesForUser(String userId, Set<String> channelIds, boolean userReceivedNote){
 		//NOTE: userId is ES ID as well
 		JSONObject updateData = JSON.make(
-				"userId", userId,
-				"checkChannels", channelIds
+				"userId", userId
 		);
+		if (userReceivedNote){
+			JSON.put(updateData, "lastMissNoteReceived", System.currentTimeMillis());
+		}else{
+			JSON.put(updateData, "lastMissedMessage", System.currentTimeMillis());
+		}
+		JSONArray cC = new JSONArray();
+		channelIds.forEach((s) -> {
+			JSON.add(cC, s);
+		});
+		JSON.put(updateData, "checkChannels", cC);
 		return this.es.updateItemData(SocketConfig.DB_CHAT_USERS, ES_CHAT_COMMON_TYPE, userId, updateData);
 	}
 
 	@Override
-	public Set<String> getAllChannelsWithMissedMassegesForUser(String userId){
+	public JSONObject getAllChannelsWithMissedMassegesForUser(String userId){
+		long tic = Debugger.tic();
 		//call ES directly with ID
 		JSONObject data = this.es.getItem(SocketConfig.DB_CHAT_USERS, ES_CHAT_COMMON_TYPE, userId);
 		//success
 		if (Connectors.httpSuccess(data)){
 			try{
-				Set<String> channelIdSet = new ConcurrentSkipListSet<String>();
-				
 				JSONObject userData = JSON.getJObject(data, "_source");
 				if (userData == null){
 					//this should mean that there is no data
-					return channelIdSet;
+					return new JSONObject();
+				}else{
+					//filter and return
+					log.info("getAllChannelsWithMissedMassegesForUser - restored data for user ID '" + userId + "' in " + Debugger.toc(tic) + "ms.");
+					return JSON.make(
+						"checkChannels", userData.get("checkChannels"), 
+						"lastMissedMessage", userData.get("lastMissedMessage"), 
+						"lastMissNoteReceived", userData.get("lastMissNoteReceived")
+					);
 				}
-				JSONArray channelIds = JSON.getJArray(userData, "checkChannels");
-				if (channelIds != null){
-					for (int i=0; i<channelIds.size(); i++){
-						channelIdSet.add((String) channelIds.get(i)); 
-					}
-				}
-				return channelIdSet;
-			
 			}catch (Exception e){
 				log.error("getAllChannelsWithMissedMassegesForUser - failed with error: " + e.getMessage());
 				return null;
 			}
 		//fail
 		}else{
-			log.error("getAllChannelsWithMissedMassegesForUser - failed with result: " + data.toJSONString());
-			return null;
+			if (JSON.getIntegerOrDefault(data, "code", -1) == 404){
+				//create first entry
+				updateChannelsWithMissedMessagesForUser(userId, new HashSet<>(), true);
+				return new JSONObject();
+			}else{
+				log.error("getAllChannelsWithMissedMassegesForUser - failed with result: " + data.toJSONString());
+				return null;
+			}
 		}
 	}
+	
+	//--- messages ---
 
 	@Override
 	public int storeChannelMessage(JSONObject msg){
@@ -114,6 +132,7 @@ public class ChatsElasticsearchDb implements ChatsDatabase {
 					log.error("removeOldChannelMessages - failed with result " + result);
 					return -1;
 				}else{
+					log.info("removeOldChannelMessages - removed " + total + " messages from channel ID " + channelId);
 					return total;
 				}
 			}catch (Exception e){
@@ -128,6 +147,7 @@ public class ChatsElasticsearchDb implements ChatsDatabase {
 
 	@Override
 	public List<SocketMessage> getAllMessagesOfChannel(String channelId, long notOlderThanUNIX){
+		long tic = Debugger.tic();
 		//build delete query
 		JSONObject jsonQuery;
 		List<QueryElement> matches = new ArrayList<>();
@@ -158,7 +178,7 @@ public class ChatsElasticsearchDb implements ChatsDatabase {
 						allMessages.add(msg);
 					}
 				}
-				log.info("getAllMessagesOfChannel - Loaded " + allMessages.size() + " messages from DB.");
+				log.info("getAllMessagesOfChannel - Loaded " + allMessages.size() + " messages from channel '" + channelId + "' in " + Debugger.toc(tic) + "ms.");
 				return allMessages;
 			
 			}catch (Exception e){

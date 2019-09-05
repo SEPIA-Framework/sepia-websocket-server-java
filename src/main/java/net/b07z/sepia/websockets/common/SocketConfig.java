@@ -59,7 +59,8 @@ public class SocketConfig {
 	public static boolean inUserChannelBroadcastOnlyToAssistantAndSelf = true;	//in user private channel don't broadcast to other devices
 	public static int storeMessagesPerChannel = 0;		//messages to store per channel so offline users get to read them when they (re)join the channel
 	public static int maxChannelsPerUser = 10;			//how many channels can a user (non-admin) own?
-	public static int maxChannelsPerServer = 5000; 		//NOTE: this is limited by 'index.max_result_window' (10000) for Elasticsearch. If you increase this you need to adjust the ES methods! 
+	public static int maxChannelsPerServer = 5000; 		//NOTE: this is limited by 'index.max_result_window' (10000) for Elasticsearch. If you increase this you need to adjust the ES methods!
+	public static long channelCleanUpScheduleDelay = 1800000; 		//wait at least this long until automatic channel clean-up triggers 
 	
 	//----------database---------
 	
@@ -131,6 +132,7 @@ public class SocketConfig {
 			//chat
 			maxChannelsPerUser = Integer.parseInt(settings.getProperty("max_channels_per_user", "10"));
 			storeMessagesPerChannel = Integer.parseInt(settings.getProperty("store_messages_per_channel", "0"));
+			channelCleanUpScheduleDelay = Long.parseLong(settings.getProperty("channel_clean_up_schedule_delay", "1800000"));	//default 30min
 			
 			LoggerFactory.getLogger(SocketConfig.class).info("loading settings from " + configFile + "... done.");
 		}catch (Exception e){
@@ -169,6 +171,7 @@ public class SocketConfig {
 			//chat
 			config.setProperty("max_channels_per_user", String.valueOf(maxChannelsPerUser));
 			config.setProperty("store_messages_per_channel", String.valueOf(storeMessagesPerChannel));
+			config.setProperty("channel_clean_up_schedule_delay", String.valueOf(channelCleanUpScheduleDelay));
 			
 			FilesAndStreams.saveSettings(configFile, config);
 			
