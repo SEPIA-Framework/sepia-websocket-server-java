@@ -63,12 +63,16 @@ public class SocketUserPool {
 		}
 	}
 	/**
-	 * Get all users by id or null if no user with this id is present in pool.
+	 * Get all users by id with open session or null if no user with this id is present in pool.
 	 */
 	public static List<SocketUser> getAllUsersById(String id){
 		try{
 			return userPool.entrySet().stream()
-				.filter(e -> e.getValue().getUserId().equalsIgnoreCase(id))
+				.filter(e -> {
+					//SocketUser su = e.getValue();
+					//return (su.getUserSession().isOpen() && su.getUserId().equalsIgnoreCase(id));
+					return (e.getValue().getUserId().equalsIgnoreCase(id));
+				})
 				.map(Map.Entry::getValue)
 				.collect(Collectors.toList());
 
@@ -77,16 +81,23 @@ public class SocketUserPool {
 		}
 	}
 	/**
-	 * Deactivated all users with this id.
+	 * Deactivated all users that are identical (same user ID, same device ID, same channel ID).
 	 */
-	public static List<SocketUser> setUsersWithSameIdInactive(String id, Session excludeSession, String userChannel){
-		List<SocketUser> allUsers = getAllUsersById(id);
+	public static List<SocketUser> setUsersWithSameIdInactive(SocketUser user){
+		String userId = user.getUserId();
+		Session excludeSession = user.getUserSession();
+		String userChannel = user.getActiveChannel();
+		String deviceId = user.getDeviceId();
+		
+		List<SocketUser> allUsers = getAllUsersById(userId);
 		List<SocketUser> deactivatedUsers = new ArrayList<>();
+		
 		for (SocketUser su : allUsers){
 			boolean isExcludeSession = (excludeSession != null)? (su.getUserSession().equals(excludeSession)) : false;
 			if (!isExcludeSession){
-				boolean isConflictChannel = (userChannel != null)? (su.getActiveChannel().equals(userChannel)) : true;
-				if (isConflictChannel && su.isActive()){
+				boolean isConflictChannel = (userChannel != null)? (su.getActiveChannel().equalsIgnoreCase(userChannel)) : true;
+				boolean isSameDeviceId = (deviceId != null)? su.getDeviceId().equalsIgnoreCase(deviceId) : false;
+				if (isConflictChannel && (isSameDeviceId || !SocketConfig.distinguishUsersByDeviceId) && su.isActive()){
 					su.setInactive();
 					deactivatedUsers.add(su);
 				}

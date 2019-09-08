@@ -1,6 +1,9 @@
 package net.b07z.sepia.websockets.server;
 import static spark.Spark.*;
 
+import java.util.HashSet;
+import java.util.Map;
+
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,8 +16,8 @@ import net.b07z.sepia.server.core.tools.Debugger;
 import net.b07z.sepia.server.core.tools.JSON;
 import net.b07z.sepia.server.core.tools.Timer;
 import net.b07z.sepia.websockets.common.SocketChannel;
-import net.b07z.sepia.websockets.common.SocketChannelPool;
 import net.b07z.sepia.websockets.common.SocketConfig;
+import net.b07z.sepia.websockets.database.ChannelsDatabase;
 import net.b07z.sepia.websockets.endpoints.ChannelManager;
 
 public class StartWebSocketServer {
@@ -107,7 +110,22 @@ public class StartWebSocketServer {
 	//SETUP DEFAULT CHANNELS
 	public static void createDefaultChannels(){
 		try {
-			SocketChannelPool.createChannel(SocketChannel.OPEN_WORLD, SocketConfig.SERVERNAME, true);		//Open world
+			//Load from database
+			ChannelsDatabase channelsDb = SocketConfig.getDefaultChannelsDatabase();
+			boolean includeOtherServers = false;
+			Map<String, SocketChannel> channelPool = channelsDb.getAllChannles(includeOtherServers);
+			
+			//Check if we got a result
+			if (channelPool != null){
+				SocketChannelPool.setPool(channelPool);
+			}
+			
+			//Open world
+			if (!SocketChannelPool.hasChannelId(SocketChannel.OPEN_WORLD)){
+				SocketChannelPool.createChannel(
+						SocketChannel.OPEN_WORLD, SocketConfig.SERVERNAME, true, "Open World", new HashSet<String>(), false
+				);
+			}
 			
 		} catch (Exception e) {
 			log.error("One or more default channels could not be created!");
@@ -136,8 +154,16 @@ public class StartWebSocketServer {
 															SocketConfig.apiVersion, SocketConfig.localName, SocketConfig.localSecret));
         post("/createChannel", (request, response) -> 	ChannelManager.createChannel(request, response));
         post("/joinChannel", (request, response) -> 	ChannelManager.joinChannel(request, response));
+        post("/deleteChannel", (request, response) -> 	ChannelManager.deleteChannel(request, response));
+        post("/getAvailableChannels", (request, response) -> 	ChannelManager.getAvailableChannels(request, response));
+        post("/getChannelHistoryStatistic", (request, response) -> 	ChannelManager.getChannelHistoryStatistic(request, response));
+        post("/removeOutdatedChannelMessages", (request, response) -> 	ChannelManager.removeOutdatedChannelMessages(request, response));
         //TODO:
-        //getChannel, getAllChannels, getChannelData, deleteChannel
+        //getChannel, getChannelData
+        
+        //usually requested via socket connection:
+        post("/getChannelsWithMissedMessages", (request, response) -> 	ChannelManager.getChannelsWithMissedMessages(request, response));
+        
         
         //set access-control headers to enable CORS
 		if (SocketConfig.allowCORS){

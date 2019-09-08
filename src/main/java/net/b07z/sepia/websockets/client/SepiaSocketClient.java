@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.b07z.sepia.server.core.tools.Debugger;
+import net.b07z.sepia.server.core.tools.Is;
 import net.b07z.sepia.server.core.tools.JSON;
 import net.b07z.sepia.websockets.common.SocketConfig;
 import net.b07z.sepia.websockets.common.SocketMessage;
@@ -33,13 +34,22 @@ import net.b07z.sepia.websockets.common.SocketMessage.SenderType;
  *
  */
 @WebSocket
-public class SepiaSocketClient implements SocketClient{
+public class SepiaSocketClient implements SocketClient {
 	//also possible @WebSocket(maxTextMessageSize = 64 * 1024)
 	static Logger log = LoggerFactory.getLogger(SepiaSocketClient.class);
+	
+	//TODO: this is a bit messy because it has evolved over time with different styles and should be checked against:
+	//Assist-Server: AssistEndpoint.InputParameters
+	public static final String CREDENTIALS_USER_ID = "userId";
+	public static final String CREDENTIALS_PASSWORD = "pwd";
+	public static final String CREDENTIALS_KEY = "KEY";
+	public static final String PARAMETERS_CLIENT = "client";
+	public static final String PARAMETERS_DEVICE_ID = "device_id";
 	
 	//--- SESSION DATA ---
 	private Session session;
 	private String username;
+	private String deviceId;
 	private String givenName;
 	private String activeChannel;
 	private JSONObject credentials;
@@ -56,40 +66,21 @@ public class SepiaSocketClient implements SocketClient{
     private CountDownLatch closeLatch;
 
     /**
-     * Create the default SEPIA messages client.
-     */
-    public SepiaSocketClient()
-    {
-        connectLatch = new CountDownLatch(1);
-        closeLatch = new CountDownLatch(1);
-    }
-    /**
-     * Create the default SEPIA messages client with credentials to authenticate against server.
-     * @param credentials - JSONObject with "userId" and "pwd" (parameters like client info will not be sent)
-     */
-    public SepiaSocketClient(JSONObject credentials)
-    {
-        if (credentials.get("pwd") != null && credentials.get("userId") != null){
-        	this.credentials = credentials;
-        	this.username = (String) credentials.get("userId");
-        }
-        
-    	connectLatch = new CountDownLatch(1);
-        closeLatch = new CountDownLatch(1);
-    }
-    /**
      * Create the default SEPIA messages client with credentials to authenticate against server.
      * Parameters are set as well here so you can give a specific client info, environment etc..
-     * @param credentials - JSONObject with "userId" and "pwd" (parameters like client info will not be sent)
-     * @param clientParameters - things that specify the client like info, environment, location, time etc.
+     * @param credentials - JSONObject with CREDENTIALS_USER_ID and CREDENTIALS_PASSWORD (parameters like client info will not be sent). 
+     * @param clientParameters - things that specify the client like info, deviceId, environment, location, time etc.
      */
     public SepiaSocketClient(JSONObject credentials, JSONObject clientParameters)
     {
-        if (credentials.get("pwd") != null && credentials.get("userId") != null){
+        if (credentials.get(CREDENTIALS_PASSWORD) != null && credentials.get(CREDENTIALS_USER_ID) != null){
         	this.credentials = credentials;
-        	this.username = (String) credentials.get("userId");
+        	this.username = (String) credentials.get(CREDENTIALS_USER_ID);
         }
         this.clientParameters = clientParameters;
+        if (Is.notNullOrEmpty(clientParameters)){
+        	this.deviceId = JSON.getString(clientParameters, SepiaSocketClient.PARAMETERS_DEVICE_ID);
+        }
         
     	connectLatch = new CountDownLatch(1);
         closeLatch = new CountDownLatch(1);
@@ -127,7 +118,8 @@ public class SepiaSocketClient implements SocketClient{
      */
     public void replyToMessage(SocketMessage msg){
     	System.out.printf("Got msg: '%s' and sent reply%n", msg.text);
-		SocketMessage reply = new SocketMessage(activeChannel, username, msg.sender, "Interesting, tell me more!", "default");
+		SocketMessage reply = new SocketMessage(activeChannel, username, deviceId, msg.sender, msg.senderDeviceId, 
+				"Interesting, tell me more!", "default");
 		if (msg.msgId != null) reply.setMessageId(msg.msgId);
 		sendMessage(reply, 3000);
     }
@@ -137,7 +129,8 @@ public class SepiaSocketClient implements SocketClient{
     public void commentChat(SocketMessage msg){
     	if (msg.text.toLowerCase().contains("wetter")){
 			System.out.printf("Saw 'wetter' and said something%n");
-			SocketMessage reply = new SocketMessage(activeChannel, username, "", "Wetter ist so la la oder?", "default");
+			SocketMessage reply = new SocketMessage(activeChannel, username, deviceId, "", "", 
+					"Wetter ist so la la oder?", "default");
 			reply.setSenderType(SenderType.assistant.name());
 			if (msg.msgId != null) reply.setMessageId(msg.msgId);
 	        sendMessage(reply, 3000);
@@ -154,7 +147,8 @@ public class SepiaSocketClient implements SocketClient{
 		//send alo when a user joined
 		if (msg.text != null && msg.text.contains("joined")){
 			System.out.printf("Saw 'join' and said alo%n");
-			SocketMessage reply = new SocketMessage(activeChannel, username, "", "Alo, alo, Grahhaaaaaam!", "default");
+			SocketMessage reply = new SocketMessage(activeChannel, username, deviceId, "", "", 
+					"Alo, alo, Grahhaaaaaam!", "default");
 			reply.setSenderType(SenderType.assistant.name());
 			if (msg.msgId != null) reply.setMessageId(msg.msgId);
 	        sendMessage(reply, 3000);
@@ -258,7 +252,7 @@ public class SepiaSocketClient implements SocketClient{
 						//set credentials
 						JSONObject data = JSON.make("dataType", DataType.authenticate.name());
 						if (credentials != null && !credentials.isEmpty()){
-							username = (String) credentials.get("userId");
+							username = (String) credentials.get(CREDENTIALS_USER_ID);
 							JSON.add(data, "credentials", credentials);
 						}
 						//set parameters
@@ -267,7 +261,8 @@ public class SepiaSocketClient implements SocketClient{
 						}
 						log.info("WEBSOCKET-CLIENT: Authenticating user: '" + username + "'"); 		//debug
 						
-						SocketMessage msgUserName = new SocketMessage("", username, SocketConfig.SERVERNAME, data);
+						SocketMessage msgUserName = new SocketMessage("", username, deviceId, SocketConfig.SERVERNAME, SocketConfig.localName,
+								data);
 						if (msgId != null) msgUserName.setMessageId(msgId);
 						boolean msgSent = sendMessage(msgUserName, 3000);
 						if (!msgSent){
@@ -338,6 +333,11 @@ public class SepiaSocketClient implements SocketClient{
     @Override
     public String getUserId(){
     	return username;
+    }
+    
+    @Override
+    public String getDeviceId(){
+    	return deviceId;
     }
     
     @Override

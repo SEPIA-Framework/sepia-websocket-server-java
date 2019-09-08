@@ -5,7 +5,15 @@ import java.util.Properties;
 import org.slf4j.LoggerFactory;
 
 import net.b07z.sepia.server.core.server.ConfigDefaults;
+import net.b07z.sepia.server.core.tools.ClassBuilder;
 import net.b07z.sepia.server.core.tools.FilesAndStreams;
+import net.b07z.sepia.websockets.database.ChannelsDatabase;
+import net.b07z.sepia.websockets.database.ChannelsElasticsearchDb;
+import net.b07z.sepia.websockets.database.ChannelsInMemoryDb;
+import net.b07z.sepia.websockets.database.ChatsDatabase;
+import net.b07z.sepia.websockets.database.ChatsElasticsearchDb;
+import net.b07z.sepia.websockets.database.ChatsInMemoryDb;
+import net.b07z.sepia.websockets.database.ConfigElasticSearch;
 
 /**
  * Some settings shared by server and client. 
@@ -18,9 +26,9 @@ public class SocketConfig {
 	//Server
 	public static int PORT = 20723;
 	public static final String SERVERNAME = "SEPIA-Websocket-Server"; 	//this is to identify the server (in client as well)
-	public static String localName = "sepia-websocket-server";			//**user defined local server name
+	public static String localName = "sepia-websocket-server-1";		//**user defined local server name (works as server device ID as well)
 	public static String localSecret = "123456";						//**user defined secret to validate local server
-	public static final String apiVersion = "v1.1.0";
+	public static final String apiVersion = "v1.2.0";
 	public static String privacyPolicyLink = "";						//Link to privacy policy
 	
 	public static final boolean allowCORS = true;
@@ -43,7 +51,38 @@ public class SocketConfig {
 	public static boolean isSSL = false;
 	public static String keystorePwd = "13371337";
 	public static final String authenticationModule = ConfigDefaults.defaultAuthModule;
+	public static String chatsDbModule = ChatsInMemoryDb.class.getCanonicalName();
+	public static String channelsDbModule = ChannelsInMemoryDb.class.getCanonicalName();
 	
+	//General chat settings
+	public static boolean distinguishUsersByDeviceId = true;		//allow 2 users with same ID to be active when device ID is different?
+	public static boolean inUserChannelBroadcastOnlyToAssistantAndSelf = true;	//in user private channel don't broadcast to other devices
+	public static int storeMessagesPerChannel = 0;		//messages to store per channel so offline users get to read them when they (re)join the channel
+	public static int maxChannelsPerUser = 10;			//how many channels can a user (non-admin) own?
+	public static int maxChannelsPerServer = 5000; 		//NOTE: this is limited by 'index.max_result_window' (10000) for Elasticsearch. If you increase this you need to adjust the ES methods!
+	public static long channelCleanUpScheduleDelay = 1800000; 		//wait at least this long until automatic channel clean-up triggers 
+	
+	//----------database---------
+	
+	//Region settings
+	public static final String REGION_US = "us";					//Region tag for US
+	public static final String REGION_EU = "eu";					//Region tag for EU
+	public static final String REGION_TEST = "custom";				//Region tag for TEST
+	public static final String REGION_CUSTOM = "custom";			//Region tag for CUSTOM server
+	public static String defaultRegion = REGION_CUSTOM;				//**Region for different cloud services (e.g. AWS or local)
+		
+	//DB structure/indices
+	public static final String DB_CHAT_CHANNELS = "chat";			//chat channels - NOTE: the name originates from the old index structure
+	public static final String DB_CHAT_MESSAGES = "chat-messages";	//chat messages
+	public static final String DB_CHAT_USERS = "chat-users";		//chat users
+	
+	//Getters
+	public static ChannelsDatabase getDefaultChannelsDatabase(){
+		return (ChannelsDatabase) ClassBuilder.construct(channelsDbModule);
+	}
+	public static ChatsDatabase getDefaultChatsDatabase(){
+		return (ChatsDatabase) ClassBuilder.construct(chatsDbModule);
+	}
 	
 	//----------helpers----------
 	
@@ -70,8 +109,30 @@ public class SocketConfig {
 			allowInternalCalls = Boolean.valueOf(settings.getProperty("allow_internal_calls"));
 			//policies
 			privacyPolicyLink =  settings.getProperty("privacy_policy");
+			//modules
+			String channelsDbModuleType = settings.getProperty("module_channels_db", "in_memory");
+			if (channelsDbModuleType.equals("in_memory")){
+				channelsDbModule = ChannelsInMemoryDb.class.getCanonicalName();
+			}else if (channelsDbModuleType.equals("elasticsearch")){
+				channelsDbModule = ChannelsElasticsearchDb.class.getCanonicalName();
+			}
+			String chatsDbModuleType = settings.getProperty("module_chats_db", "in_memory");
+			if (chatsDbModuleType.equals("in_memory")){
+				chatsDbModule = ChatsInMemoryDb.class.getCanonicalName();
+			}else if (chatsDbModuleType.equals("elasticsearch")){
+				chatsDbModule = ChatsElasticsearchDb.class.getCanonicalName();
+			}
 			//assistant
 			//systemAssistantId = settings.getProperty("systemAssistantId");
+			//databases
+			defaultRegion = settings.getProperty("db_default_region", "custom");
+			ConfigElasticSearch.endpoint_custom = settings.getProperty("db_elastic_endpoint_custom", "http://localhost:20724");
+			ConfigElasticSearch.endpoint_eu1 = settings.getProperty("db_elastic_endpoint_eu1");
+			ConfigElasticSearch.endpoint_us1 = settings.getProperty("db_elastic_endpoint_us1");
+			//chat
+			maxChannelsPerUser = Integer.parseInt(settings.getProperty("max_channels_per_user", "10"));
+			storeMessagesPerChannel = Integer.parseInt(settings.getProperty("store_messages_per_channel", "0"));
+			channelCleanUpScheduleDelay = Long.parseLong(settings.getProperty("channel_clean_up_schedule_delay", "1800000"));	//default 30min
 			
 			LoggerFactory.getLogger(SocketConfig.class).info("loading settings from " + configFile + "... done.");
 		}catch (Exception e){
@@ -102,6 +163,15 @@ public class SocketConfig {
 			config.setProperty("allow_internal_calls", String.valueOf(allowInternalCalls));
 			//assistant
 			//config.setProperty("systemAssistantId", systemAssistantId);
+			//databases
+			config.setProperty("db_default_region", defaultRegion);
+			config.setProperty("db_elastic_endpoint_custom", ConfigElasticSearch.endpoint_custom);
+			config.setProperty("db_elastic_endpoint_eu1", ConfigElasticSearch.endpoint_eu1);
+			config.setProperty("db_elastic_endpoint_us1", ConfigElasticSearch.endpoint_us1);
+			//chat
+			config.setProperty("max_channels_per_user", String.valueOf(maxChannelsPerUser));
+			config.setProperty("store_messages_per_channel", String.valueOf(storeMessagesPerChannel));
+			config.setProperty("channel_clean_up_schedule_delay", String.valueOf(channelCleanUpScheduleDelay));
 			
 			FilesAndStreams.saveSettings(configFile, config);
 			

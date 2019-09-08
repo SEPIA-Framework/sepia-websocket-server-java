@@ -27,4 +27,9 @@ public class AbstractSocketHandler {
     public void onMessage(Session userSession, String message) {
     	server.onMessage(userSession, message);
     }
+    
+    @OnWebSocketError
+    public void onError(Session userSession, Throwable error) {
+    	server.onError(userSession, error);
+    }
 }
