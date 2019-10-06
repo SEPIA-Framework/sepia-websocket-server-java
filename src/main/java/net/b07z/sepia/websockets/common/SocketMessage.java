@@ -77,7 +77,7 @@ public class SocketMessage {
 	public static class SortByTimestampOldToNew implements Comparator<SocketMessage>{ 
 		@Override
 	    public int compare(SocketMessage a, SocketMessage b){ 
-	        return (int) (a.timeStampUNIX - b.timeStampUNIX); 
+	        return Long.compare(a.timeStampUNIX, b.timeStampUNIX); 
 	    } 
 	}
 	//-----------------------------
