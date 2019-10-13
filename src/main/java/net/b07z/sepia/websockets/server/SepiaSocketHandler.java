@@ -1,6 +1,5 @@
 package net.b07z.sepia.websockets.server;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.websocket.api.*;
@@ -81,9 +80,19 @@ public class SepiaSocketHandler implements SocketServer {
 			}
 			
 			SocketUser user = getUserBySession(userSession);
-			String channelId = msg.channelId;
 			
-			//Validate user and channel values
+			//IMPORTANT: Make sure the sender is what he pretends to be
+			if (user == null){
+				msg.sender = "";
+			}else{
+				msg.sender = user.getUserId();
+			}
+			if (msg.senderType != null && msg.senderType.equals(SenderType.server.name()) && !msg.sender.equals(SocketConfig.SERVERNAME)){
+				msg.senderType = null; 		//don't allow fake SERVER senderType
+				//TODO: senderType could be confused with values of "dataType" like "assistAnswer" etc. ... 
+			}
+			
+			//Validate user data
 			boolean userDataAccepted = false;
 			if (user == null){
 				//white-list actions that are possible without stored user
@@ -93,43 +102,15 @@ public class SepiaSocketHandler implements SocketServer {
 					userDataAccepted = true;
 				}
 			}else{
+				//we only accept remote actions if they are approved by the assistant BECAUSE:
+				//They are redirected from the remote action endpoint of the Assist-Server
 				if (msgHasData && dataType.equals(DataType.remoteAction.name())){
-					//we only accept remote actions if they are approved by the assistant BECAUSE:
-					//They are redirected from the remote action endpoint of the Assist-Server
 					if (user.isAuthenticated() && user.getUserRole().equals(Role.assistant)){
-						//the actual userId is in the data
-						String remoteUserId = (String) msg.data.get("user");
-						String targetDeviceId = (String) msg.data.get("targetDeviceId");
-						boolean channelIdIsAuto = (channelId == null || channelId.isEmpty() || channelId.equals("<auto>"));
-						boolean targetDeviceIsAuto = (targetDeviceId == null || targetDeviceId.isEmpty() || targetDeviceId.equals("<auto>"));
-						
-						if (remoteUserId != null && !remoteUserId.isEmpty()){
-							//find the right session
-							user = null; //SocketUserPool.getActiveUserById(remoteUserId);
-							List<SocketUser> possibleRemoteUsers = SocketUserPool.getAllUsersById(remoteUserId);
-							boolean correctDevice = false;
-							boolean correctChannel = false;
-							for (SocketUser su : possibleRemoteUsers){
-								correctDevice = (targetDeviceIsAuto || (targetDeviceId.equals(su.getDeviceId())));
-								correctChannel = (channelIdIsAuto || (channelId.equals(su.getActiveChannel())));
-								if (correctDevice && correctChannel){
-									user = su;
-								}
-							}
-							if (user != null){
-								userDataAccepted = true;
-								//debug:
-								/*
-								System.out.println("RemoteUserId: " + user.getUserId());
-								System.out.println("TargetChannel: " + channelId);
-								System.out.println("TargetDevice: " + targetDeviceId);
-								*/
-							}
-						}
+						userDataAccepted = true;
 					}else{
 						userDataAccepted = false;
 					}
-				
+				//everything else should be OK
 				}else{
 					userDataAccepted = true;
 				}
@@ -141,9 +122,11 @@ public class SepiaSocketHandler implements SocketServer {
 					System.out.println("UserActive: " + user.isActive());
 				}
 				*/
-				//need more checks?
 			}
+			
+			//Validate channel
 			boolean channelAccepted = false;
+			String channelId = msg.channelId;
 			if (channelId == null || channelId.isEmpty()){
 				//white-list actions that are possible without channel
 				if (msgHasData && (
@@ -189,22 +172,13 @@ public class SepiaSocketHandler implements SocketServer {
 					}
 				}
 			}
+			
+			//Validation summary
 			boolean isValidMessage = userDataAccepted && channelAccepted;
 			if (!isValidMessage){
 				log.info("Message failed the 'SocketUser' or 'channelId' test! - Message (safe): " + SepiaSocketBroadcaster.makeSafeMessage(msg).toJSONString());
 			}
 			//if we reach this point it means: a) we have a valid user and channel or b) we don't need them
-
-			//make sure the sender is what he pretends to be
-			if (user == null){
-				msg.sender = "";
-			}else{
-				msg.sender = user.getUserId();
-			}
-			if (msg.senderType != null && msg.senderType.equals(SenderType.server.name()) && !msg.sender.equals(SocketConfig.SERVERNAME)){
-				msg.senderType = null; 		//don't allow fake SERVER senderType
-				//TODO: senderType could be confused with values of "dataType" like "assistAnswer" etc. ... 
-			}
 			
 			//check data
 			if (isValidMessage && msgHasData){

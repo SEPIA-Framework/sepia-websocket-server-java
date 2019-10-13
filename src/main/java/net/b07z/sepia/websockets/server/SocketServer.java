@@ -23,12 +23,16 @@ public interface SocketServer {
 	public long getLastBroadcastTime();
 	
 	/**
-	 * This method automatically selects the users that shall receive the message (collection, channel, session?).
+	 * This method automatically selects the users that shall receive the message (collection, channel).
 	 */
 	public void broadcastMessage(SocketUser source, SocketMessage msg);
-	
+	/**
+	 * This method sends the message to a specific channel.
+	 */
 	public void broadcastMessage(SocketMessage msg, String channelId);
-	
+	/**
+	 * This method sends the message to a specific user of a given session.
+	 */
 	public void broadcastMessage(SocketMessage msg, Session session);
 	
 	//--- user handling ---

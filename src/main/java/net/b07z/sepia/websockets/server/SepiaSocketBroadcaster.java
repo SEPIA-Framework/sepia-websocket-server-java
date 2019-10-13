@@ -34,11 +34,11 @@ public class SepiaSocketBroadcaster {
 	
 	/**
      * Make a status message with certain configuration (receiver is all, but you can send it to a certain userSession to make it private).
-     * @param msgId
-     * @param channelId
-     * @param text
-     * @param dataType
-     * @param addActiveChannelUsersList
+     * @param msgId - message ID if known or null
+     * @param channelId - channel to receive message
+     * @param text - status text (TextType.status is set automatically)
+     * @param dataType - any value of {@link DataType}. Use socketMessage.addData(...) to add specific data for type later.
+     * @param addActiveChannelUsersList - add list of active users to update channel data on client?
      */
     public static SocketMessage makeServerStatusMessage(String msgId, String channelId, String text, DataType dataType, boolean addActiveChannelUsersList){
     	SocketMessage msg = new SocketMessage(channelId, SocketConfig.SERVERNAME, SocketConfig.localName, "", "", 
@@ -164,7 +164,10 @@ public class SepiaSocketBroadcaster {
     		broadcastMessageToChannel(msg, msg.channelId);
     	
     	}else if (msg.receiver != null && !msg.receiver.isEmpty()){
-    		//TODO: no channel, no session, no collection ... probably better to prevent that this message is sent at all because the user can't block it yet!
+    		//TODO: no channel, no session, no collection 
+    		//... probably better to prevent that this message is sent at all because the user can't block it yet!
+    		//
+    		//Other option could be to build a collection list using the single receiver ID:  
     		//if (msg.sender != null && !msg.sender.isEmpty()){}
     		//broadcastMessage(msg, SocketUserPool.getAllUsersById(msg.receiver));
     	}
