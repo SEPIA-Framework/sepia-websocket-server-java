@@ -129,6 +129,8 @@ public class SocketConfig {
 			ConfigElasticSearch.endpoint_custom = settings.getProperty("db_elastic_endpoint_custom", "http://localhost:20724");
 			ConfigElasticSearch.endpoint_eu1 = settings.getProperty("db_elastic_endpoint_eu1");
 			ConfigElasticSearch.endpoint_us1 = settings.getProperty("db_elastic_endpoint_us1");
+			ConfigElasticSearch.auth_type = settings.getProperty("db_elastic_auth_type", null);
+			ConfigElasticSearch.auth_data = settings.getProperty("db_elastic_auth_data", null);
 			//chat
 			maxChannelsPerUser = Integer.parseInt(settings.getProperty("max_channels_per_user", "10"));
 			storeMessagesPerChannel = Integer.parseInt(settings.getProperty("store_messages_per_channel", "0"));

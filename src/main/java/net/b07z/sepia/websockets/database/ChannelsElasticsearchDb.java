@@ -29,13 +29,17 @@ public class ChannelsElasticsearchDb implements ChannelsDatabase {
 	Elasticsearch es;
 	
 	public ChannelsElasticsearchDb(){
-		this.esServerUrl = ConfigElasticSearch.getEndpoint(SocketConfig.defaultRegion);
-		this.es = new Elasticsearch(this.esServerUrl);
+		this(ConfigElasticSearch.getEndpoint(SocketConfig.defaultRegion));
 	}
 
 	public ChannelsElasticsearchDb(String serverUrl){
 		this.esServerUrl = serverUrl;
-		this.es = new Elasticsearch(this.esServerUrl);
+		String esAuthData = ConfigElasticSearch.getAuthData();
+		if (Is.notNullOrEmpty(esAuthData)){
+			this.es = new Elasticsearch(this.esServerUrl, ConfigElasticSearch.getAuthType(), esAuthData);
+		}else{
+			this.es = new Elasticsearch(this.esServerUrl);
+		}
 	}
 	
 	@Override
