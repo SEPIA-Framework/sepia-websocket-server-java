@@ -6,6 +6,8 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
+import net.b07z.sepia.server.core.tools.Is;
+
 /**
  * Abstraction layer for MQTT client.
  * 
@@ -20,7 +22,7 @@ public class SepiaMqttClient {
 	
 	/**
 	 * Create MQTT client with default options and in-memory persistence.
-	 * @param brokerAddress - address of MQTT broker, e.g. tcp://iot.eclipse.org:1883
+	 * @param brokerAddress - address of MQTT broker, e.g. tcp://iot.eclipse.org:1883 or ws://broker.hivemq.com:8000
 	 * @throws Exception 
 	 */
 	public SepiaMqttClient(String brokerAddress) throws Exception {
@@ -30,7 +32,7 @@ public class SepiaMqttClient {
 	}
 	/**
 	 * Create MQTT client with custom options and in-memory persistence.
-	 * @param brokerAddress - address of MQTT broker, e.g. tcp://iot.eclipse.org:1883
+	 * @param brokerAddress - address of MQTT broker, e.g. tcp://iot.eclipse.org:1883 or ws://broker.hivemq.com:8000
 	 * @param clientOptions - {@link SepiaMqttClient.SepiaMqttClientOptions}
 	 * @throws Exception 
 	 */
@@ -56,6 +58,12 @@ public class SepiaMqttClient {
 		options.setAutomaticReconnect(this.clientOptions.automaticReconnect);
 		options.setCleanSession(this.clientOptions.cleanSession);
 		options.setConnectionTimeout(this.clientOptions.connectionTimeoutSec);
+		if (Is.notNullOrEmpty(this.clientOptions.userName)){
+			options.setUserName(this.clientOptions.userName);
+		}
+		if (Is.notNullOrEmpty(this.clientOptions.password)){
+			options.setPassword(this.clientOptions.password.toCharArray());
+		}
 		//some defaults
 		options.setMaxInflight(10);
 		this.client.connect(options);

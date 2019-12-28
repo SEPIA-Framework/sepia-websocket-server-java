@@ -13,12 +13,14 @@ public class SepiaMqttClientOptions {
 	public boolean cleanSession = true;
 	public int connectionTimeoutSec = 10;
 	public String publisherId;
+	public String userName;
+	public String password;
 	
 	/**
 	 * Create new MQTT client options with random publisher ID.
 	 */
 	public SepiaMqttClientOptions(){
-		this.publisherId = UUID.randomUUID().toString();
+		this.publisherId = UUID.randomUUID().toString();	//alternative: MqttClient.generateClientId()
 	}
 	/**
 	 * Create new MQTT client options with given publisher ID.
@@ -49,6 +51,23 @@ public class SepiaMqttClientOptions {
 	 */
 	public SepiaMqttClientOptions setConnectionTimeout(int connectionTimeoutSec){
 		this.connectionTimeoutSec = connectionTimeoutSec;
+		return this;
+	}
+	
+	/**
+	 * Set username for authentication.
+	 * @param username
+	 */
+	public SepiaMqttClientOptions setUserName(String userName){
+		this.userName = userName;
+		return this;
+	}
+	/**
+	 * Set password for authentication.
+	 * @param password
+	 */
+	public SepiaMqttClientOptions setPassword(String password){
+		this.password = password;
 		return this;
 	}
 }
