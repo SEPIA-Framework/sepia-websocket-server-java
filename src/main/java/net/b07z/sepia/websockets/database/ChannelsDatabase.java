@@ -12,7 +12,7 @@ public interface ChannelsDatabase {
 	/**
 	 * Check if channel with ID already exists.
 	 * @param channelId - ID of channel
-	 * @return
+	 * @return true/false
 	 * @throws Exception
 	 */
 	public boolean hasChannelWithId(String channelId) throws Exception;

@@ -40,7 +40,7 @@ public class SocketClientHandler
 	 */
 	public SocketClientHandler(SocketClient socket){
 		if (SocketConfig.isSSL){													
-			SslContextFactory sslContextFactory = new SslContextFactory();
+			SslContextFactory sslContextFactory = new SslContextFactory.Client();
 		    sslContextFactory.setKeyStorePath("Xtensions/SSL/ssl-keystore.jks");
 		    sslContextFactory.setKeyStorePassword(SocketConfig.keystorePwd);
 		    client = new WebSocketClient(new HttpClient(sslContextFactory));
@@ -67,7 +67,7 @@ public class SocketClientHandler
     }
     /**
      * Connect client to server with URI.
-     * @param destUri - URI of the server
+     * @param destURI - URI of the server
      */
 	public void connect(String destURI)
     {

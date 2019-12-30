@@ -97,7 +97,7 @@ public class SocketChannel {
 	 * Using the hash allows a channel owner to invite a specific user instead of giving him a key that everybody can use.
 	 * @param key - channel access key or hash of user ID + channel key
 	 * @param userId - ID of user to allow access or null
-	 * @return
+	 * @return true/false
 	 */
 	public boolean checkUserOrChannelKey(String key, String userId){
 		if (Is.notNullOrEmpty(userId)){
@@ -153,7 +153,7 @@ public class SocketChannel {
 	
 	/**
 	 * Add user to channel if channelKey fits.
-	 * @param userId - user to add
+	 * @param user - user to add
 	 * @param channelKey - channel access key
 	 * @return true (user added)/false (not allowed)
 	 */

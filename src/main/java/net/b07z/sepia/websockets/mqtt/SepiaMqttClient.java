@@ -33,7 +33,7 @@ public class SepiaMqttClient {
 	/**
 	 * Create MQTT client with custom options and in-memory persistence.
 	 * @param brokerAddress - address of MQTT broker, e.g. tcp://iot.eclipse.org:1883 or ws://broker.hivemq.com:8000
-	 * @param clientOptions - {@link SepiaMqttClient.SepiaMqttClientOptions}
+	 * @param clientOptions - {@link SepiaMqttClientOptions}
 	 * @throws Exception 
 	 */
 	public SepiaMqttClient(String brokerAddress, SepiaMqttClientOptions clientOptions) throws Exception {

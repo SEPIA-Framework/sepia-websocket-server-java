@@ -56,7 +56,7 @@ public class SepiaMqttClientOptions {
 	
 	/**
 	 * Set username for authentication.
-	 * @param username
+	 * @param userName
 	 */
 	public SepiaMqttClientOptions setUserName(String userName){
 		this.userName = userName;

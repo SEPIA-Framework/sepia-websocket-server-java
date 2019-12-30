@@ -56,7 +56,7 @@ public class SepiaSocketBroadcaster {
      * Make a message that tells the client to update specific data. Should be sent to a user-session (since it has no channel and receiver).
      * @param updateType - e.g. "missedChannelMessage" or "availableChannels"
      * @param data - preferably a JSONObject or JSONArray. If this is empty the client should call the request method itself.
-     * @return
+     * @return {@link SocketMessage}
      */
     public static SocketMessage makeServerUpdateDataMessage(String updateType, Object data){
     	SocketMessage msgUpdateData = new SocketMessage(null, SocketConfig.SERVERNAME, SocketConfig.localName, null, null, JSON.make(

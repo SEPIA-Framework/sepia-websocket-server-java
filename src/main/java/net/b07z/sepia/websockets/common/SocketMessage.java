@@ -219,7 +219,7 @@ public class SocketMessage {
 	/**
 	 * Add data if data exists otherwise create data.
 	 * @param key - field in data
-	 * @param data - actual data to add at field
+	 * @param value - actual data to add at field
 	 */
 	public void addData(String key, Object value){
 		if (this.data == null){

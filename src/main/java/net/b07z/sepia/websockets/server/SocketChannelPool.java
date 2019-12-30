@@ -52,7 +52,6 @@ public class SocketChannelPool {
 	/**
 	 * Check if channel pool has channel with certain ID.
 	 * @param channelId - ID to check
-	 * @return
 	 */
 	public static boolean hasChannelId(String channelId) {
 		return (getChannel(channelId) != null);
@@ -132,9 +131,8 @@ public class SocketChannelPool {
 	
 	/**
 	 * Update channel with new member.
-	 * @param channelId
+	 * @param sc - socket channel
 	 * @param members
-	 * @return
 	 */
 	public static boolean addMembersToChannel(SocketChannel sc, List<String> members){
 		//update channel
@@ -232,7 +230,7 @@ public class SocketChannelPool {
 	
 	/**
 	 * Convert list of channels to JSONArray for client.
-	 * @param list - list of channels
+	 * @param channels - list of channels
 	 * @param receiverUserId - ID of receiver or null. If not null some fields are modified if its equal to channel owner (e.g. key).
 	 * @return JSONArray expected to be compatible with client channel list
 	 */
