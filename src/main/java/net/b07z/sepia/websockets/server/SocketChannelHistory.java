@@ -19,6 +19,7 @@ import net.b07z.sepia.server.core.tools.Debugger;
 import net.b07z.sepia.server.core.tools.Is;
 import net.b07z.sepia.server.core.tools.JSON;
 import net.b07z.sepia.server.core.tools.ThreadManager;
+import net.b07z.sepia.websockets.common.SocketChannel;
 import net.b07z.sepia.websockets.common.SocketConfig;
 import net.b07z.sepia.websockets.common.SocketMessage;
 import net.b07z.sepia.websockets.database.ChatsDatabase;
@@ -140,7 +141,7 @@ public class SocketChannelHistory {
 	//--- Methods for handling channels content ---
 	
 	/**
-	 * Store a {@link SocketMessage} for a {@SocketChannel} (via channel ID) as JSON and drop the oldest message when the queue is full.<br>
+	 * Store a {@link SocketMessage} for a {@link SocketChannel} (via channel ID) as JSON and drop the oldest message when the queue is full.<br>
 	 * NOTE: some content of the message (e.g. credentials) will be removed for security reasons.
 	 * @param channelId - ID of channel
 	 * @param socketMessage - message to store

@@ -30,13 +30,17 @@ public class ChatsElasticsearchDb implements ChatsDatabase {
 	Elasticsearch es;
 	
 	public ChatsElasticsearchDb(){
-		this.esServerUrl = ConfigElasticSearch.getEndpoint(SocketConfig.defaultRegion);
-		this.es = new Elasticsearch(this.esServerUrl);
+		this(ConfigElasticSearch.getEndpoint(SocketConfig.defaultRegion));
 	}
 
 	public ChatsElasticsearchDb(String serverUrl){
 		this.esServerUrl = serverUrl;
-		this.es = new Elasticsearch(this.esServerUrl);
+		String esAuthData = ConfigElasticSearch.getAuthData();
+		if (Is.notNullOrEmpty(esAuthData)){
+			this.es = new Elasticsearch(this.esServerUrl, ConfigElasticSearch.getAuthType(), esAuthData);
+		}else{
+			this.es = new Elasticsearch(this.esServerUrl);
+		}
 	}
 	
 	//--- user data ---

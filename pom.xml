@@ -3,7 +3,7 @@
   	
   	<groupId>net.b07z.sepia.websockets</groupId>
   	<artifactId>sepia-websockets</artifactId>
-  	<version>1.2.1</version>
+  	<version>1.2.2</version>
   	<name>SEPIA webSocket server and client</name>
   	<description>WebSockets server and client to offer messages (chat and data) in SEPIA</description>
   
@@ -79,6 +79,17 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>3.0.0-M3</version>
 			</plugin>
+			
+			<!-- Java docs, use with: mvn javadoc:jar -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>3.0.1</version>
+				<configuration>
+					<doclint>none</doclint> <!-- TODO: fix errors found by linter -->
+					<finalName>sepia-chat-v${project.version}</finalName>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 	
@@ -86,13 +97,18 @@
         <dependency>
 	        <groupId>net.b07z.sepia.server.core</groupId>
 	        <artifactId>sepia-core-tools</artifactId>
-	        <version>2.2.3</version>
+	        <version>2.2.4</version>
 	    </dependency>
         <dependency>
             <groupId>com.j2html</groupId>
             <artifactId>j2html</artifactId>
             <version>0.88</version>
         </dependency>
+        <dependency>
+    		<groupId>org.eclipse.paho</groupId>
+    		<artifactId>org.eclipse.paho.client.mqttv3</artifactId>
+    		<version>1.2.0</version> <!-- NOTE: we can't use 1.2.2 due to: https://github.com/eclipse/paho.mqtt.java/issues/572 -->
+		</dependency>
         
         <dependency>
       		<groupId>junit</groupId>
