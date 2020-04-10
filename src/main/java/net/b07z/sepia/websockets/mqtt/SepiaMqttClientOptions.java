@@ -30,6 +30,14 @@ public class SepiaMqttClientOptions {
 	}
 	
 	/**
+	 * Set new publisher ID (client ID).
+	 * @param publisherId
+	 */
+	public SepiaMqttClientOptions setPublisherId(String publisherId){
+		this.publisherId = publisherId;
+		return this;
+	}
+	/**
 	 * Automatically reconnect in the event of network failure?
 	 * @param automaticReconnect
 	 */
