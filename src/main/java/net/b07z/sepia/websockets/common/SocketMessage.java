@@ -8,7 +8,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import org.owasp.encoder.Encode;
 
+import net.b07z.sepia.server.core.tools.Converters;
+import net.b07z.sepia.server.core.tools.Is;
 import net.b07z.sepia.server.core.tools.JSON;
 
 /**
@@ -270,6 +273,9 @@ public class SocketMessage {
 	 */
 	public JSONObject getJSON(){
 		JSONObject message = new JSONObject();
+		//pre-processing
+		String escapedText = Encode.forHtml(this.text);		//escape HTML
+		//build
 		//TODO: add internal id (this.id)? If we do how do we import it later?
 		message.put("msgId", msgId);
 		message.put("channelId", channelId);
@@ -281,7 +287,7 @@ public class SocketMessage {
 		message.put("time", timeStampHHmmss);
 		if (receiver != null && !receiver.isEmpty()) message.put("receiver", receiver);
 		if (receiverDeviceId != null && !receiverDeviceId.isEmpty()) message.put("receiverDeviceId", receiverDeviceId);
-		if (text != null && !text.isEmpty()) message.put("text", text);
+		if (text != null && !text.isEmpty()) message.put("text", escapedText);
 		if (textType != null && !textType.isEmpty()) message.put("textType", textType);
 		if (html != null && !html.isEmpty()) message.put("html", html);
 		if (data != null && !data.isEmpty()) message.put("data", data);
@@ -289,6 +295,7 @@ public class SocketMessage {
 		if (userList != null && !userList.isEmpty()){
 			message.put("userList", userList);
 		}
+		//JSON.prettyPrint(message); 		//DEBUG
 		return message;
 	}
 	
@@ -325,6 +332,11 @@ public class SocketMessage {
 		imported.data = (JSONObject) msgJson.get("data");
 		imported.userList = (JSONArray) msgJson.get("userList");
 		imported.clientType = (String) msgJson.get("clientType");
+		
+		//post-processing
+		if (Is.notNullOrEmpty(imported.text)){
+			imported.text = Converters.unescapeHTML(imported.text);		//simple un-escape of HTML
+		}
 		
 		return imported;
 	}

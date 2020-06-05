@@ -176,7 +176,8 @@ public class SepiaSocketHandler implements SocketServer {
 			//Validation summary
 			boolean isValidMessage = userDataAccepted && channelAccepted;
 			if (!isValidMessage){
-				log.info("Message failed the 'SocketUser' or 'channelId' test! - Message (safe): " + SepiaSocketBroadcaster.makeSafeMessage(msg).toJSONString());
+				log.info("Message failed the 'SocketUser' or 'channelId' test! - Message (safe): " 
+						+ SepiaSocketBroadcaster.makeSafeMessage(msg).toJSONString());
 			}
 			//if we reach this point it means: a) we have a valid user and channel or b) we don't need them
 			

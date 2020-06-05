@@ -1,12 +1,19 @@
 package net.b07z.sepia.websockets.mqtt;
 
+import java.util.function.Consumer;
+
 import org.eclipse.paho.client.mqttv3.IMqttClient;
+import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 
 import net.b07z.sepia.server.core.tools.Is;
+import net.b07z.sepia.server.core.tools.JSON;
 
 /**
  * Abstraction layer for MQTT client.
@@ -50,7 +57,7 @@ public class SepiaMqttClient {
 	}
 	
 	/**
-	 * Connect to broker with given options.
+	 * Connect to broker with given options. This is a blocking method that returns when connected (or on error).
 	 * @throws Exception
 	 */
 	public void connect() throws Exception {
@@ -67,6 +74,13 @@ public class SepiaMqttClient {
 		//some defaults
 		options.setMaxInflight(10);
 		this.client.connect(options);
+	}
+	
+	/**
+	 * Is client connected to server?
+	 */
+	public boolean isConnected(){
+		return this.client.isConnected();
 	}
 	
 	/**
@@ -102,4 +116,53 @@ public class SepiaMqttClient {
 		this.client.publish(topic, msg);
 	}
 
+	/**
+	 * Subscribe to a topic and register a message handler.
+	 * @param topic - any MQTT topic (can include wildcards)
+	 * @param callbackHandler - consumer to handle JSON response (keys: id, topic, payload)
+	 * @throws Exception
+	 */
+	public void subscribe(String topic, Consumer<JSONObject> callbackHandler) throws Exception {
+		this.client.subscribe(topic, new IMqttMessageListener(){
+			@Override
+			public void messageArrived(String top, MqttMessage message) throws Exception{
+				String msg = message.toString();
+				JSONObject payload;
+				if (msg != null && msg.getClass().equals(String.class)){
+					try{
+						if (msg.startsWith("{")){
+							//parse to JSONObject
+							payload = JSON.parseStringOrFail(msg);
+						}else if (msg.startsWith("[")){
+							//parse to JSONArray
+							JSONArray data = JSON.parseStringToArrayOrFail(msg);
+							payload = JSON.make("data", data);
+						}else{
+							payload = JSON.make("message", msg);
+						}
+					}catch(Exception e){
+						payload = JSON.make("message", msg);
+					}
+				}else{
+					//failed to convert MqttMessage
+					payload = new JSONObject();
+				}
+				JSONObject jo = JSON.make(
+					"topic", top,
+					"id", message.getId(),
+					"payload", payload
+				);
+				callbackHandler.accept(jo);
+			}
+		});
+	}
+	
+	/**
+	 * Unsubscribe from topic or fail
+	 * @param topic - topic to unsubscribe from
+	 * @throws MqttException
+	 */
+	public void unsubscribe(String topic) throws MqttException {
+		this.client.unsubscribe(topic);
+	}
 }

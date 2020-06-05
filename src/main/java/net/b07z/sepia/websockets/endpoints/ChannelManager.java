@@ -45,6 +45,7 @@ public class ChannelManager {
 				//get parameters
 				String channelName = params.getString("channelName");
 				if (!Is.nullOrEmpty(channelName)){
+					//make sure there are no weird characters in the name (consider Converters.escapeHTML ?)
 					channelName = channelName.replaceAll("[^\\w\\s#\\-\\+&\\?!\\.]","").replaceAll("\\s+", " ");
 					channelName = channelName.substring(0, Math.min(channelName.length(), 26));
 				}
