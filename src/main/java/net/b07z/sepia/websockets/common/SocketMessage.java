@@ -50,7 +50,8 @@ public class SocketMessage {
 		client 		//to be used only in client itself
 	}
 	public static enum RemoteActionType{
-		hotkey
+		hotkey,
+		sync
 	}
 
 	private long id;				//TODO: should be combined with clientID. Can it overflow?, note: not yet submitted to client ...

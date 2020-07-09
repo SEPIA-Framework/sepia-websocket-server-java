@@ -40,7 +40,7 @@ public class SocketUserPool {
 	}
 	
 	/**
-	 * Get active user by id or null if no active user is present in pool.
+	 * Return the first active user with arbitrary device ID or null if no active user is present in pool.
 	 */
 	public static SocketUser getActiveUserById(String id){
 		try{
