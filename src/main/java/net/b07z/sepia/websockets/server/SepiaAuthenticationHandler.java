@@ -144,14 +144,14 @@ public class SepiaAuthenticationHandler implements ServerMessageHandler {
 			//AUTH. FAIL
 			}else{
 				SocketMessage msgLoginError = SepiaSocketBroadcaster.makeServerStatusMessage(
-						msg.msgId, "<auto>", "Login failed, credentials wrong or assistant not reachable", DataType.errorMessage, false
+						msg.msgId, "<auto>", "Login failed, credentials wrong, token expired or assistant not reachable (401, 500)", DataType.errorMessage, false
 				);
 				server.broadcastMessage(msgLoginError, userSession);
 			}
 		//AUTH. missing credentials to try
 		}else{
 			SocketMessage msgLoginError = SepiaSocketBroadcaster.makeServerStatusMessage(
-					msg.msgId, "<auto>", "Login failed, missing credentials", DataType.errorMessage, false
+					msg.msgId, "<auto>", "Login failed, missing credentials (401)", DataType.errorMessage, false
 			);
 			server.broadcastMessage(msgLoginError, userSession);
 		}
