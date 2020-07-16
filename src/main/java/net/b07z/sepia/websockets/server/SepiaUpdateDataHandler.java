@@ -60,6 +60,8 @@ public class SepiaUpdateDataHandler implements ServerMessageHandler {
 	        SocketMessage errorMsg = SepiaSocketBroadcaster.makeServerStatusMessage(
 	        		"", "", "Error in updateData: unknown request", DataType.errorMessage, false
 	        );
+	        errorMsg.addData("errorType", SocketMessage.ErrorType.updateRequest.name());
+			errorMsg.addData("errorCode", 501);
 	        server.broadcastMessage(errorMsg, userSession);
 		}
 	}

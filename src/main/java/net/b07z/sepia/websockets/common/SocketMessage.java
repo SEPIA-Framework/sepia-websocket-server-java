@@ -53,6 +53,13 @@ public class SocketMessage {
 		hotkey,
 		sync
 	}
+	
+	public static enum ErrorType{
+		authentication,
+		channel,
+		updateRequest,
+		unknown
+	}
 
 	private long id;				//TODO: should be combined with clientID. Can it overflow?, note: not yet submitted to client ...
 	public String msgId = ""; 		//id defined by client to follow the message on reply

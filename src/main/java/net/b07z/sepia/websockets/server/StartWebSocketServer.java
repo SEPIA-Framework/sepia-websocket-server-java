@@ -19,6 +19,7 @@ import net.b07z.sepia.websockets.common.SocketChannel;
 import net.b07z.sepia.websockets.common.SocketConfig;
 import net.b07z.sepia.websockets.database.ChannelsDatabase;
 import net.b07z.sepia.websockets.endpoints.ChannelManager;
+import net.b07z.sepia.websockets.endpoints.ClientManager;
 
 public class StartWebSocketServer {
 	
@@ -158,13 +159,13 @@ public class StartWebSocketServer {
         post("/getAvailableChannels", (request, response) -> 	ChannelManager.getAvailableChannels(request, response));
         post("/getChannelHistoryStatistic", (request, response) -> 	ChannelManager.getChannelHistoryStatistic(request, response));
         post("/removeOutdatedChannelMessages", (request, response) -> 	ChannelManager.removeOutdatedChannelMessages(request, response));
-        //TODO:
-        //getChannel, getChannelData
+        //TODO: getChannel, getChannelData
+        
+        post("/getOwnClientConnections", (request, response) -> 	ClientManager.getClientConnections(request, response));
         
         //usually requested via socket connection:
         post("/getChannelsWithMissedMessages", (request, response) -> 	ChannelManager.getChannelsWithMissedMessages(request, response));
-        
-        
+                
         //set access-control headers to enable CORS
 		if (SocketConfig.allowCORS){
 			SparkJavaFw.enableCORS("*", "*", "*");
