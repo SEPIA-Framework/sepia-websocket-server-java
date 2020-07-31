@@ -8,7 +8,7 @@ import org.eclipse.jetty.websocket.api.annotations.*;
  * @author Florian Quirin
  *
  */
-@WebSocket
+@WebSocket(maxTextMessageSize = 262144, maxBinaryMessageSize = 262144)	//default: 65536
 public class AbstractSocketHandler {
 	
 	public static SocketServer server; 
