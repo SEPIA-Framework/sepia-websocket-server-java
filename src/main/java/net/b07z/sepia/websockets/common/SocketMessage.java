@@ -41,7 +41,8 @@ public class SocketMessage {
 		directCmd,			//has a direct cmd for assistant
 		updateData,			//has an data update request attached, either e.g. 'updateData: "channels"' with 'data: ""' or 'data: [channel1, ...]'  
 		remoteAction,		//has a remote action like ASR trigger or hotkey submit
-		errorMessage		//combined with TextType.status this message will be displayed as error line in channel (ignores normal status msg settings)
+		errorMessage,		//combined with TextType.status this message will be displayed as error line in channel (ignores normal status msg settings)
+		ping				//heartbeat request and reply
 	}
 	public static enum SenderType{
 		user,
@@ -51,7 +52,8 @@ public class SocketMessage {
 	}
 	public static enum RemoteActionType{
 		hotkey,
-		sync
+		sync,
+		music
 	}
 	
 	public static enum ErrorType{

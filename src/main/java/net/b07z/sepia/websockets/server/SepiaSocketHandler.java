@@ -132,6 +132,7 @@ public class SepiaSocketHandler implements SocketServer {
 				if (msgHasData && (
 							dataType.equals(DataType.joinChannel.name()) 
 						|| 	dataType.equals(DataType.authenticate.name())
+						|| 	dataType.equals(DataType.ping.name())
 						)){
 					channelAccepted = true;
 				}
@@ -207,6 +208,11 @@ public class SepiaSocketHandler implements SocketServer {
 							DataType.welcome, true);
 			        broadcastMessage(msgWelcome);
 			    */
+					
+				//ping request or reply
+				}else if (dataType.equals(DataType.ping.name())){
+					ServerMessageHandler smh = new SepiaClientPingHandler(this);
+					smh.handle(userSession, msg);
 			        
 				//authenticate
 				}else if (dataType.equals(DataType.authenticate.name())){
