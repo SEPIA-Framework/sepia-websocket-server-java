@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import net.b07z.sepia.server.core.tools.Debugger;
 import net.b07z.sepia.server.core.tools.Is;
 import net.b07z.sepia.server.core.tools.JSON;
+import net.b07z.sepia.server.core.tools.ThreadManager;
 import net.b07z.sepia.websockets.common.SocketConfig;
 import net.b07z.sepia.websockets.common.SocketMessage;
 import net.b07z.sepia.websockets.common.SocketMessage.DataType;
@@ -219,7 +220,7 @@ public class SepiaSocketClient implements SocketClient {
     @OnWebSocketMessage
     public void onMessage(String msg){
     	timeOfLastAction = System.currentTimeMillis();
-    	Thread thread = new Thread(() -> {
+    	ThreadManager.run(() -> {
     		int activeT = activeThreads.incrementAndGet();
     		if (activeT > maxThreadsRegistered) maxThreadsRegistered = activeT;
 	    	try {
@@ -247,6 +248,20 @@ public class SepiaSocketClient implements SocketClient {
 					}else if (dataType.equals(DataType.directCmd.name()) || dataType.equals(DataType.assistAnswer.name())){
 						//Note: handled in the final interface implementation (in the overwritten methods replyToMessage, ...)?
 						
+					}else if (dataType.equals(DataType.ping.name())){
+						SocketMessage pingReply = new SocketMessage("", username, deviceId, 
+								SocketConfig.SERVERNAME, SocketConfig.localName, 
+								JSON.make(
+									"dataType", DataType.ping.name(),
+									"replyId", msgId
+								)
+						);
+						if (msgId != null) pingReply.setMessageId(msgId);
+						boolean msgSent = sendMessage(pingReply, 3000);
+						if (!msgSent){
+							//TODO: now what?
+						}
+						
 					//data: authentication
 					}else if (dataType.equals(DataType.authenticate.name())){
 						//set credentials
@@ -261,8 +276,7 @@ public class SepiaSocketClient implements SocketClient {
 						}
 						log.info("WEBSOCKET-CLIENT: Authenticating user: '" + username + "'"); 		//debug
 						
-						SocketMessage msgUserName = new SocketMessage("", username, deviceId, SocketConfig.SERVERNAME, SocketConfig.localName,
-								data);
+						SocketMessage msgUserName = new SocketMessage("", username, deviceId, SocketConfig.SERVERNAME, SocketConfig.localName, data);
 						if (msgId != null) msgUserName.setMessageId(msgId);
 						boolean msgSent = sendMessage(msgUserName, 3000);
 						if (!msgSent){
@@ -300,7 +314,6 @@ public class SepiaSocketClient implements SocketClient {
 			}
 	    	activeThreads.decrementAndGet();
     	});
-    	thread.start();
     }
     
     @Override
