@@ -7,6 +7,8 @@ import org.json.simple.JSONObject;
 
 import net.b07z.sepia.server.core.data.Role;
 import net.b07z.sepia.server.core.tools.JSON;
+import net.b07z.sepia.websockets.server.SepiaClientPingHandler;
+import net.b07z.sepia.websockets.server.SepiaClientPingHandler.PingRequest;
 
 /**
  * User of the webSocketClient/Server
@@ -32,6 +34,8 @@ public class SocketUser {
 	
 	private boolean isActive = false;			//when a user connects he is inactive until he broadcasts his welcome. Users can also be deactivated if multiple same accounts are used.
 	private boolean isAuthenticated = false;	//a user can authenticate to use more services (e.g. assistant)
+	
+	private JSONObject info;			//all kinds of additional (dynamic) info - parts of it may be added to 'getUserListEntry'
 	
 	/**
 	 * Create a new "user" (can also be an assistant or IoT device) 
@@ -88,6 +92,9 @@ public class SocketUser {
 			"sessionId", sessionId
 		);
 		JSON.put(entry, "role", role.name());
+		if (info != null && info.containsKey("deviceLocalSite")){
+			JSON.put(entry, "deviceLocalSite", info.get("deviceLocalSite"));
+		}
 		return entry;
 	}
 	
@@ -140,4 +147,35 @@ public class SocketUser {
 		isAuthenticated = true;
 	}
 	
+	public JSONObject getInfo(){
+		return info;
+	}
+	public Object getInfoEntryOrNull(String key){
+		if (info != null){
+			return info.get(key);
+		}else{
+			return null;
+		}
+	}
+	public void setInfo(String key, Object value){
+		if (info == null) info = new JSONObject();
+		JSON.put(info, key, value);
+	}
+	
+	//--- stuff called after authentication or close ---
+	
+	public void closeAllActivities(){
+		//cancel alive-ping request if any
+		PingRequest pr = (PingRequest) getInfoEntryOrNull("nextPingRequest");
+		if (pr != null){
+			pr.cancelScheduledPing();
+		}
+	}
+	
+	public void registerActivities(){
+		//start alive-ping requests
+		if (SocketConfig.useAlivePings && userSession != null && userSession.isOpen()){
+			SepiaClientPingHandler.scheduleNextUserPing(userSession, -1);
+		}
+	}
 }
