@@ -318,7 +318,7 @@ public class SocketChannelHistory {
 	 */
 	public static void scheduleChannelCleanUpIfRequired(){
 		if (channelsScheduledForCleanUp.size() == 1){
-			ThreadManager.scheduleTaskToRunOnceInBackground(SocketConfig.channelCleanUpScheduleDelay, () -> {
+			ThreadManager.scheduleBackgroundTaskAndForget(SocketConfig.channelCleanUpScheduleDelay, () -> {
 				cleanUpChannelsOnSchedule();
 			});
 			log.info("scheduleChannelCleanUp - Scheduled clean-up for UNIX time: " 
