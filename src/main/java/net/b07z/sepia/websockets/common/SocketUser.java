@@ -92,8 +92,17 @@ public class SocketUser {
 			"sessionId", sessionId
 		);
 		JSON.put(entry, "role", role.name());
-		if (info != null && info.containsKey("deviceLocalSite")){
-			JSON.put(entry, "deviceLocalSite", info.get("deviceLocalSite"));
+		if (info != null){
+			JSONObject infoJson = new JSONObject();
+			if (info.containsKey("deviceLocalSite")){
+				JSON.put(infoJson, "deviceLocalSite", info.get("deviceLocalSite"));
+			}
+			if (info.containsKey("deviceGlobalLocation")){
+				JSON.put(infoJson, "deviceGlobalLocation", info.get("deviceGlobalLocation"));
+			}
+			if (!infoJson.isEmpty()){
+				JSON.put(entry, "info", infoJson);
+			}
 		}
 		return entry;
 	}
@@ -147,9 +156,15 @@ public class SocketUser {
 		isAuthenticated = true;
 	}
 	
+	/**
+	 * Get some more info about user or client device.
+	 */
 	public JSONObject getInfo(){
 		return info;
 	}
+	/**
+	 * Get a specific field from user or client device info.
+	 */
 	public Object getInfoEntryOrNull(String key){
 		if (info != null){
 			return info.get(key);
@@ -157,6 +172,9 @@ public class SocketUser {
 			return null;
 		}
 	}
+	/**
+	 * Set a specific field of the user or client device info.
+	 */
 	public void setInfo(String key, Object value){
 		if (info == null) info = new JSONObject();
 		JSON.put(info, key, value);
