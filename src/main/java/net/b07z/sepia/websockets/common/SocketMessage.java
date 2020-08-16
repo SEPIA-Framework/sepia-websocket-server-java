@@ -53,7 +53,7 @@ public class SocketMessage {
 	public static enum RemoteActionType{
 		hotkey,
 		sync,
-		music
+		media
 	}
 	
 	public static enum ErrorType{
