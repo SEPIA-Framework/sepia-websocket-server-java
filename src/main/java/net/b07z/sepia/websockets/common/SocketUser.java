@@ -94,6 +94,7 @@ public class SocketUser {
 		JSON.put(entry, "role", role.name());
 		if (info != null){
 			JSONObject infoJson = new JSONObject();
+			//use this white-list of added info
 			if (info.containsKey("deviceLocalSite")){
 				JSON.put(infoJson, "deviceLocalSite", info.get("deviceLocalSite"));
 			}

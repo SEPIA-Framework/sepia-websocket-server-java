@@ -64,7 +64,7 @@ public class SepiaUpdateDataHandler implements ServerMessageHandler {
 				if (data.containsKey("deviceLocalSite")){
 					JSONObject dls = JSON.getJObject(data, "deviceLocalSite");
 					//optimize memory
-					if (Is.nullOrEmpty(JSON.getString(dls, "location"))){
+					if (Is.nullOrEmpty(JSON.getString(dls, "location"))){ 	//.location has to be set!
 						user.setInfo("deviceLocalSite", null);
 					}else{
 						user.setInfo("deviceLocalSite", dls);
@@ -73,7 +73,7 @@ public class SepiaUpdateDataHandler implements ServerMessageHandler {
 				if (data.containsKey("deviceGlobalLocation")){
 					JSONObject dgl = JSON.getJObject(data, "deviceGlobalLocation");
 					//optimize memory
-					if (Is.nullOrEmpty(JSON.getString(dgl, "latitude"))){
+					if (Is.nullOrEmpty(JSON.getString(dgl, "latitude"))){	//.latitude and .longitude have to be set!
 						user.setInfo("deviceGlobalLocation", null);
 					}else{
 						user.setInfo("deviceGlobalLocation", dgl);
