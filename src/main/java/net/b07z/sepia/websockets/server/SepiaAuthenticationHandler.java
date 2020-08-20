@@ -67,6 +67,7 @@ public class SepiaAuthenticationHandler implements ServerMessageHandler {
 				
 				//is assistant, thing or user? - we can add more here if required
 				String userId = userAccount.getUserID();
+				String clientInfo = JSON.getString(parameters, "client");
 				String deviceId = Is.notNullOrEmpty(msg.senderDeviceId)? 
 						msg.senderDeviceId : ((Is.notNullOrEmpty(parameters))? JSON.getString(parameters, SepiaSocketClient.PARAMETERS_DEVICE_ID) : null); 
 				if (Is.nullOrEmpty(deviceId)){
@@ -86,6 +87,9 @@ public class SepiaAuthenticationHandler implements ServerMessageHandler {
 				//CREATE and STORE SocketUser
 				String acceptedName = userAccount.getUserNameShort();
 				SocketUser participant = new SocketUser(userSession, userId, acceptedName, role, deviceId);
+				if (clientInfo != null){
+					participant.setInfo("clientInfo", clientInfo);
+				}
 				//participant.setDeviceId(deviceId);
 				server.storeUser(participant);
 				participant.setAuthenticated();

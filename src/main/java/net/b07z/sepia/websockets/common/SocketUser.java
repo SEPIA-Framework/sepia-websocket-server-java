@@ -95,6 +95,12 @@ public class SocketUser {
 		if (info != null){
 			JSONObject infoJson = new JSONObject();
 			//use this white-list of added info
+			if (info.containsKey("clientInfo")){
+				JSON.put(infoJson, "clientInfo", info.get("clientInfo"));
+			}
+			if (info.containsKey("lastPing")){
+				JSON.put(infoJson, "lastPing", info.get("lastPing"));
+			}
 			if (info.containsKey("deviceLocalSite")){
 				JSON.put(infoJson, "deviceLocalSite", info.get("deviceLocalSite"));
 			}
@@ -194,7 +200,8 @@ public class SocketUser {
 	public void registerActivities(){
 		//start alive-ping requests
 		if (SocketConfig.useAlivePings && userSession != null && userSession.isOpen()){
-			SepiaClientPingHandler.scheduleNextUserPing(userSession, -1);
+			//the first ping is sent directly to test if the client supports the feature
+			SepiaClientPingHandler.scheduleNextUserPing(userSession, 15000);
 		}
 	}
 }

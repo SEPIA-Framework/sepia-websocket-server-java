@@ -96,6 +96,10 @@ public class SepiaClientPingHandler implements ServerMessageHandler {
 			return (this.expireTs > 0 && System.currentTimeMillis() > this.expireTs);
 		}
 		
+		/**
+		 * This will be triggered either when server got a valid response to request or when the request timed out.
+		 * @return resolved in time true/false
+		 */
 		public boolean resolveRequest(){
 			//close open observer thread
 			if (cancelResultObserverFun != null){
@@ -106,27 +110,41 @@ public class SepiaClientPingHandler implements ServerMessageHandler {
 			}else{
 				this.resolvedInTime = false;
 			}
+			//clean-up
 			openPingRequests.remove(pingId);
 			SocketUser user = (userSession != null)? SocketUserPool.getUserBySession(userSession) : null;
 			if (user != null){
 				user.setInfo("nextPingRequest", null);
 			}
+			//handle
 			if (!this.resolvedInTime){
 				//Client did not answer in time ...
 				if (userSession != null && userSession.isOpen()){
-					log.error("Client did not answer in time after alive-ping. Resetting connection for: " 
-							+ (user != null? user.getUserId() : "unknown"));
-					userSession.close();
+					//we check if the client answered the alive-ping at least once to make sure it actually supports the feature
+					if (user != null && user.getInfoEntryOrNull("lastPing") != null){
+						log.error("Client did not answer in time after alive-ping. Resetting connection for: " 
+								+ (user != null? user.getUserId() : "unknown"));
+						userSession.close(4080, "Alive-ping timeout");
+					}else{
+						//we assume the client does not know how to answer ... so we just leave it alone and hope for update ;-)
+					}
 				}else if (userSession != null){
+					//this can be removed in any case
 					if (user != null){
 						log.error("Client did not answer in time after alive-ping and connection seems lost. Resetting data for: " 
 								+ (user != null? user.getUserId() : "unknown"));
 						SocketUserPool.removeUser(user);
-						//TODO: is this enough?
+						//TODO: is this enough? Inform other users? clean-up somewhere else?
 					}
 					SocketUserPool.removePendingSession(userSession);	//just to make sure
 				}
+			}else{
+				//All good
+				if (user != null){
+					user.setInfo("lastPing", System.currentTimeMillis());
+				}
 			}
+			//System.out.println("Ping resolve: " + this.resolvedInTime); 		//DEBUG
 			return this.resolvedInTime;
 		}
 		
