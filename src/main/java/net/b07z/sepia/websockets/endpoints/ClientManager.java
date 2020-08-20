@@ -10,11 +10,13 @@ import net.b07z.sepia.server.core.data.Role;
 import net.b07z.sepia.server.core.server.RequestParameters;
 import net.b07z.sepia.server.core.server.RequestPostParameters;
 import net.b07z.sepia.server.core.server.SparkJavaFw;
+import net.b07z.sepia.server.core.tools.Debugger;
 import net.b07z.sepia.server.core.tools.Is;
 import net.b07z.sepia.server.core.tools.JSON;
 import net.b07z.sepia.server.core.users.Account;
 import net.b07z.sepia.websockets.common.SocketUser;
 import net.b07z.sepia.websockets.common.SocketUserPool;
+import net.b07z.sepia.websockets.server.Statistics;
 import spark.Request;
 import spark.Response;
 
@@ -38,6 +40,8 @@ public class ClientManager {
     	//authenticate
     	Account userAccount = new Account();
 		if (userAccount.authenticate(params)){
+			long tic = Debugger.tic();
+			
 			//depends on user
 			boolean getAll = userAccount.hasRole(Role.superuser.name());
 			String userId = userAccount.getUserID();
@@ -77,11 +81,21 @@ public class ClientManager {
 							"result", "success",	
 							"clients", result
 					);
+					
+					//statistics
+					Statistics.addOtherApiHit("getClientConnections");
+					Statistics.addOtherApiTime("getClientConnections", tic);
+					
 					return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
 					
 				}catch (Exception e){
 					//error
 					JSONObject msgJSON = JSON.make("result", "fail", "error", e.getMessage());
+					
+					//statistics
+					Statistics.addOtherApiHit("getClientConnections-fail");
+					Statistics.addOtherApiTime("getClientConnections-fail", tic);
+					
 					return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
 				}	
 			}else{
