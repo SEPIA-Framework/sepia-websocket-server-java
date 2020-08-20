@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import net.b07z.sepia.server.core.data.Role;
 import net.b07z.sepia.server.core.tools.DateTime;
+import net.b07z.sepia.server.core.tools.Is;
 import net.b07z.sepia.server.core.tools.JSON;
 import net.b07z.sepia.websockets.common.SocketChannel;
 import net.b07z.sepia.websockets.common.SocketConfig;
@@ -102,11 +103,21 @@ public class SepiaSocketHandler implements SocketServer {
 					userDataAccepted = true;
 				}
 			}else{
-				//we only accept remote actions if they are approved by the assistant BECAUSE:
-				//They are redirected from the remote action endpoint of the Assist-Server
+				//check proper source or target for remoteAction
 				if (msgHasData && dataType.equals(DataType.remoteAction.name())){
-					if (user.isAuthenticated() && user.getUserRole().equals(Role.assistant)){
-						userDataAccepted = true;
+					if (user.isAuthenticated()){
+						if (user.getUserRole().equals(Role.assistant)){
+							//we accept remote actions if they are approved by the assistant (they come from HTTP endpoint usually)
+							userDataAccepted = true;
+						}else{
+							//... and we accept remote actions when target is source (e.g. device-to-device msg)
+							String remoteUserId = (String) msg.data.get("remoteUserId");
+							if (Is.notNullOrEmpty(remoteUserId) && remoteUserId.equals(user.getUserId())){
+								userDataAccepted = true;
+							}else{
+								userDataAccepted = false;
+							}
+						}
 					}else{
 						userDataAccepted = false;
 					}
