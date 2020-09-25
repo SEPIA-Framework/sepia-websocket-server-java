@@ -121,7 +121,7 @@ public class SocketMessage {
 		this.senderDeviceId = senderDeviceId;
 		this.receiver = receiver;
 		this.receiverDeviceId = receiverDeviceId;
-		this.text = text;
+		this.text = (text != null)? text.trim() : text;
 		this.textType = textType;
 		
 		this.timeStampUNIX = System.currentTimeMillis();
@@ -175,7 +175,7 @@ public class SocketMessage {
 		this.senderDeviceId = senderDeviceId;
 		this.receiver = receiver;
 		this.receiverDeviceId = receiverDeviceId;
-		this.text = text;
+		this.text = (text != null)? text.trim() : text;
 		this.textType = textType;
 		this.html = html;
 		this.data = data;
@@ -284,7 +284,11 @@ public class SocketMessage {
 	public JSONObject getJSON(){
 		JSONObject message = new JSONObject();
 		//pre-processing
-		String escapedText = Encode.forHtml(this.text);		//escape HTML
+		String escapedText = "";
+		if (text != null){
+			text = text.trim();
+			escapedText = Encode.forHtml(text);		//escape HTML
+		}
 		//build
 		//TODO: add internal id (this.id)? If we do how do we import it later?
 		message.put("msgId", msgId);
@@ -345,7 +349,7 @@ public class SocketMessage {
 		
 		//post-processing
 		if (Is.notNullOrEmpty(imported.text)){
-			imported.text = Converters.unescapeHTML(imported.text);		//simple un-escape of HTML
+			imported.text = Converters.unescapeHTML(imported.text.trim());		//simple un-escape of HTML
 		}
 		
 		return imported;
