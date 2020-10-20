@@ -23,24 +23,39 @@ public class SocketUserPool {
 	private static Map<Session, SocketUser> userPool = new ConcurrentHashMap<>();
 	private static Map<Session, JSONObject> pendingSession = new ConcurrentHashMap<>();
 	
+	/**
+	 * Store authenticated user with session in user pool. 
+	 */
 	public static void storeUser(SocketUser user){
 		userPool.put(user.getUserSession(), user);
+		user.registerActivities();
 	}
-	
+	/**
+	 * Remove user from user pool. 
+	 */
 	public static void removeUser(SocketUser user){
+		if (user != null){
+			user.closeAllActivities();
+		}
 		userPool.remove(user.getUserSession());
 	}
-	
+	/**
+	 * Store non-authenticated user session in pending session pool. 
+	 */
 	public static void storePendingSession(Session session){
 		pendingSession.put(session, JSON.make("pendingSince", System.currentTimeMillis()));
 	}
-	
+	/**
+	 * Remove user session from pending session pool (because he got authenticated or left). 
+	 * @param session
+	 */
 	public static void removePendingSession(Session session){
 		pendingSession.remove(session);
+		//TODO: we never clean this up ... I think
 	}
 	
 	/**
-	 * Get active user by id or null if no active user is present in pool.
+	 * Return the first active user with arbitrary device ID or null if no active user is present in pool.
 	 */
 	public static SocketUser getActiveUserById(String id){
 		try{
@@ -106,11 +121,21 @@ public class SocketUserPool {
 		return deactivatedUsers;
 	}
 
+	/**
+	 * Get user from session or null.
+	 */
 	public static SocketUser getUserBySession(Session session){
 		return userPool.get(session);
 	}
 
+	/**
+	 * Get all users in user pool.
+	 */
 	public static Collection<SocketUser> getAllUsers(){
 		return userPool.values(); 		//TODO: iterations over this result are not thread-safe (I guess)
+	}
+	
+	public static Collection<JSONObject> getAllPendingSessions(){
+		return pendingSession.values();
 	}
 }

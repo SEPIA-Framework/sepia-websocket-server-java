@@ -67,6 +67,18 @@ public class SepiaSocketBroadcaster {
     	return msgUpdateData;
     }
     
+    /**
+     * Make a message that tells the client to reply to an alive-ping. Should be sent to a user-session (since it has no channel and receiver).
+     * @return {@link SocketMessage}
+     */
+    public static SocketMessage makeServerClientPingMessage(){
+    	SocketMessage msgClientPing = new SocketMessage(null, SocketConfig.SERVERNAME, SocketConfig.localName, null, null, JSON.make(
+        		"dataType", DataType.ping.name()
+        ));
+    	msgClientPing.msgId = "ping-" + msgClientPing.getId();	//we "abuse" the default ID here
+    	return msgClientPing;
+    }
+    
     //make a safe message for all the users/objects in the channel that should not get sensitive data
     public static JSONObject makeSafeMessage(SocketMessage msg){
     	//note: we use the 'getJSON' here to clone the object

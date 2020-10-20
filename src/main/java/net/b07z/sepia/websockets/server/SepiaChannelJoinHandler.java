@@ -130,6 +130,8 @@ public class SepiaChannelJoinHandler implements ServerMessageHandler {
 								"Channel join failed, are you allowed in this channel?", 
 								DataType.errorMessage, false
 						);
+						msgSwitchError.addData("errorType", SocketMessage.ErrorType.channel.name());
+						msgSwitchError.addData("errorCode", 401);
 						server.broadcastMessage(msgSwitchError, userSession);									
 					}
 				}else{
@@ -139,6 +141,8 @@ public class SepiaChannelJoinHandler implements ServerMessageHandler {
 							"Channel join failed, channel does not exist!", 
 							DataType.errorMessage, false
 					);
+					msgSwitchError.addData("errorType", SocketMessage.ErrorType.channel.name());
+					msgSwitchError.addData("errorCode", 404);
 					server.broadcastMessage(msgSwitchError, userSession);									
 				}
 			}

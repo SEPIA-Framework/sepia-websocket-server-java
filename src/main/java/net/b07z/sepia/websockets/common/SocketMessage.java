@@ -41,7 +41,8 @@ public class SocketMessage {
 		directCmd,			//has a direct cmd for assistant
 		updateData,			//has an data update request attached, either e.g. 'updateData: "channels"' with 'data: ""' or 'data: [channel1, ...]'  
 		remoteAction,		//has a remote action like ASR trigger or hotkey submit
-		errorMessage		//combined with TextType.status this message will be displayed as error line in channel (ignores normal status msg settings)
+		errorMessage,		//combined with TextType.status this message will be displayed as error line in channel (ignores normal status msg settings)
+		ping				//heartbeat request and reply
 	}
 	public static enum SenderType{
 		user,
@@ -50,7 +51,16 @@ public class SocketMessage {
 		client 		//to be used only in client itself
 	}
 	public static enum RemoteActionType{
-		hotkey
+		hotkey,
+		sync,
+		media
+	}
+	
+	public static enum ErrorType{
+		authentication,
+		channel,
+		updateRequest,
+		unknown
 	}
 
 	private long id;				//TODO: should be combined with clientID. Can it overflow?, note: not yet submitted to client ...
@@ -111,7 +121,7 @@ public class SocketMessage {
 		this.senderDeviceId = senderDeviceId;
 		this.receiver = receiver;
 		this.receiverDeviceId = receiverDeviceId;
-		this.text = text;
+		this.text = (text != null)? text.trim() : text;
 		this.textType = textType;
 		
 		this.timeStampUNIX = System.currentTimeMillis();
@@ -165,7 +175,7 @@ public class SocketMessage {
 		this.senderDeviceId = senderDeviceId;
 		this.receiver = receiver;
 		this.receiverDeviceId = receiverDeviceId;
-		this.text = text;
+		this.text = (text != null)? text.trim() : text;
 		this.textType = textType;
 		this.html = html;
 		this.data = data;
@@ -274,7 +284,11 @@ public class SocketMessage {
 	public JSONObject getJSON(){
 		JSONObject message = new JSONObject();
 		//pre-processing
-		String escapedText = Encode.forHtml(this.text);		//escape HTML
+		String escapedText = "";
+		if (text != null){
+			text = text.trim();
+			escapedText = Encode.forHtml(text);		//escape HTML
+		}
 		//build
 		//TODO: add internal id (this.id)? If we do how do we import it later?
 		message.put("msgId", msgId);
@@ -335,7 +349,7 @@ public class SocketMessage {
 		
 		//post-processing
 		if (Is.notNullOrEmpty(imported.text)){
-			imported.text = Converters.unescapeHTML(imported.text);		//simple un-escape of HTML
+			imported.text = Converters.unescapeHTML(imported.text.trim());		//simple un-escape of HTML
 		}
 		
 		return imported;

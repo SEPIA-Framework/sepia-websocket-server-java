@@ -20,6 +20,7 @@ import net.b07z.sepia.websockets.common.SocketChannel;
 import net.b07z.sepia.websockets.common.SocketConfig;
 import net.b07z.sepia.websockets.server.SocketChannelHistory;
 import net.b07z.sepia.websockets.server.SocketChannelPool;
+import net.b07z.sepia.websockets.server.Statistics;
 import spark.Request;
 import spark.Response;
 
@@ -40,6 +41,8 @@ public class ChannelManager {
     	//authenticate
     	Account userAccount = new Account();
 		if (userAccount.authenticate(params)){
+			long tic = Debugger.tic();
+			
 			//log.info("Authenticated: " + userAccount.getUserID() + ", roles: " + userAccount.getUserRoles()); 		//debug
 			if (userAccount.hasRole(Role.user.name())){
 				//get parameters
@@ -100,16 +103,31 @@ public class ChannelManager {
 								"channelName", channelName,
 								"owner", ownerId
 						);
+						
+						//statistics
+						Statistics.addOtherApiHit("createChannel");
+						Statistics.addOtherApiTime("createChannel", tic);
+						
 						return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
 					
 					}else{
 						//error
 						JSONObject msgJSON = JSON.make("result", "fail", "error", "creation failed! Maybe already exists?");
+						
+						//statistics
+						Statistics.addOtherApiHit("createChannel-fail");
+						Statistics.addOtherApiTime("createChannel-fail", tic);
+						
 						return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
 					}
 				}catch (Exception e){
 					//error
 					JSONObject msgJSON = JSON.make("result", "fail", "error", e.getMessage());
+					
+					//statistics
+					Statistics.addOtherApiHit("createChannel-error");
+					Statistics.addOtherApiTime("createChannel-error", tic);
+					
 					return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
 				}	
 			}else{
@@ -159,6 +177,8 @@ public class ChannelManager {
     	//authenticate
     	Account userAccount = new Account();
 		if (userAccount.authenticate(params)){
+			long tic = Debugger.tic();
+			
 			//allowed?
 			String userId = userAccount.getUserID();
 			if (!sc.getOwner().equals(userId) && !userAccount.hasRole(Role.superuser.name())){
@@ -168,6 +188,11 @@ public class ChannelManager {
 				//delete
 				if (!SocketChannelPool.deleteChannel(sc)){
 					JSONObject msgJSON = JSON.make("result", "fail", "error", "failed to delete channel, unknown error, plz try again.");
+					
+					//statistics
+					Statistics.addOtherApiHit("deleteChannel-error");
+					Statistics.addOtherApiTime("deleteChannel-error", tic);
+					
 					return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
 				}else{
 					//TODO: kick out all users active in channel? Or broadcast to channel that it has been removed?
@@ -178,6 +203,11 @@ public class ChannelManager {
 							"channelId", channelId,
 							"channelName", sc.getChannelName()
 					);
+					
+					//statistics
+					Statistics.addOtherApiHit("deleteChannel");
+					Statistics.addOtherApiTime("deleteChannel", tic);
+					
 					return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
 				}
 			}
@@ -224,6 +254,8 @@ public class ChannelManager {
     	//authenticate
     	Account userAccount = new Account();
 		if (userAccount.authenticate(params)){
+			long tic = Debugger.tic();
+			
 			boolean isAllowed;
 			String userId = userAccount.getUserID();
 			//Already in?
@@ -240,6 +272,11 @@ public class ChannelManager {
 			if (!isAllowed){
 				//refuse
 				JSONObject msgJSON = JSON.make("result", "fail", "error", "not authorized to join channel.");
+				
+				//statistics
+				Statistics.addOtherApiHit("joinChannel-fail");
+				Statistics.addOtherApiTime("joinChannel-fail", tic);
+				
 				return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
 			}else{
 				//add member and store changes
@@ -251,6 +288,11 @@ public class ChannelManager {
 						"channelName", sc.getChannelName(),
 						"owner", sc.getOwner()
 				);
+				
+				//statistics
+				Statistics.addOtherApiHit("joinChannel");
+				Statistics.addOtherApiTime("joinChannel", tic);
+				
 				return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
 			}
 		}else{
@@ -271,6 +313,8 @@ public class ChannelManager {
     	//authenticate
     	Account userAccount = new Account();
 		if (userAccount.authenticate(params)){
+			long tic = Debugger.tic();
+			
 			//get ID and data
 			String userId = userAccount.getUserID();
 			List<SocketChannel> channels = SocketChannelPool.getAllChannelsAvailableTo(userId, includePublic);
@@ -279,6 +323,11 @@ public class ChannelManager {
 			if (channels == null){
 				//error
 				JSONObject msgJSON = JSON.make("result", "fail", "error", "failed to get channel data (database error?).");
+				
+				//statistics
+				Statistics.addOtherApiHit("getAvailableChannels-error");
+				Statistics.addOtherApiTime("getAvailableChannels-error", tic);
+				
 				return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
 			}else{
 				//convert result
@@ -289,6 +338,11 @@ public class ChannelManager {
 						"result", "success",
 						"channels", channelsArray
 				);
+				
+				//statistics
+				Statistics.addOtherApiHit("getAvailableChannels");
+				Statistics.addOtherApiTime("getAvailableChannels", tic);
+				
 				return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
 			}
 		}else{
@@ -309,6 +363,8 @@ public class ChannelManager {
     	//authenticate
     	Account userAccount = new Account();
 		if (userAccount.authenticate(params)){
+			long tic = Debugger.tic();
+			
 			//get ID and data
 			String userId = userAccount.getUserID();
 			Set<String> channels = SocketChannelHistory.getAllChannelsWithMissedMassegesForUser(userId);
@@ -317,6 +373,11 @@ public class ChannelManager {
 			if (channels == null){
 				//error
 				JSONObject msgJSON = JSON.make("result", "fail", "error", "failed to get channel data (database error?).");
+				
+				//statistics
+				Statistics.addOtherApiHit("getChannelsWithMissedMessages-error");
+				Statistics.addOtherApiTime("getChannelsWithMissedMessages-error", tic);
+				
 				return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
 			}else{
 				//convert result
@@ -327,6 +388,11 @@ public class ChannelManager {
 						"result", "success",
 						"channels", channels
 				);
+				
+				//statistics
+				Statistics.addOtherApiHit("getChannelsWithMissedMessages");
+				Statistics.addOtherApiTime("getChannelsWithMissedMessages", tic);
+				
 				return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
 			}
 		}else{
@@ -345,20 +411,33 @@ public class ChannelManager {
     	//authenticate
     	Account userAccount = new Account();
 		if (userAccount.authenticate(params)){
+			long tic = Debugger.tic();
+			
 			//must be superuser
 			if (userAccount.hasRole(Role.user.name())){
 				JSONArray data = SocketChannelHistory.getChannelHistoryInfo();
+				
 				if (Is.nullOrEmpty(data)){
 					JSONObject msgJSON = JSON.make(
 							"result", "fail",
 							"error", "data was empty, maybe no channels with history exist or data was not cached yet. Check server log for errors!"
 					);
+					
+					//statistics
+					Statistics.addOtherApiHit("getChannelHistoryStatistic-fail");
+					Statistics.addOtherApiTime("getChannelHistoryStatistic-fail", tic);
+					
 					return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
 				}else{
 					JSONObject msgJSON = JSON.make(
 							"result", "success",	
 							"info", SocketChannelHistory.getChannelHistoryInfo()
 					);
+					
+					//statistics
+					Statistics.addOtherApiHit("getChannelHistoryStatistic");
+					Statistics.addOtherApiTime("getChannelHistoryStatistic", tic);
+					
 					return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);	
 				}
 			}else{
@@ -382,6 +461,8 @@ public class ChannelManager {
     	//authenticate
     	Account userAccount = new Account();
 		if (userAccount.authenticate(params)){
+			long tic = Debugger.tic();
+			
 			//must be superuser
 			if (userAccount.hasRole(Role.user.name())){
 				JSONObject res = SocketChannelHistory.cleanUpOldChannelHistories();
@@ -390,12 +471,22 @@ public class ChannelManager {
 							"result", "success",
 							"info", res
 					);
+					
+					//statistics
+					Statistics.addOtherApiHit("removeOutdatedChannelMessages");
+					Statistics.addOtherApiTime("removeOutdatedChannelMessages", tic);
+					
 					return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
 				}else{
 					JSONObject msgJSON = JSON.make(
 							"result", "fail",
 							"error", "no outdated data was removed. Reason unknown, check server logs plz."
 					);
+					
+					//statistics
+					Statistics.addOtherApiHit("removeOutdatedChannelMessages-fail");
+					Statistics.addOtherApiTime("removeOutdatedChannelMessages-fail", tic);
+					
 					return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 200);
 				}
 			}else{

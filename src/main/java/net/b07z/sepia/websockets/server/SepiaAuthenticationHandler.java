@@ -67,6 +67,7 @@ public class SepiaAuthenticationHandler implements ServerMessageHandler {
 				
 				//is assistant, thing or user? - we can add more here if required
 				String userId = userAccount.getUserID();
+				String clientInfo = JSON.getString(parameters, "client");
 				String deviceId = Is.notNullOrEmpty(msg.senderDeviceId)? 
 						msg.senderDeviceId : ((Is.notNullOrEmpty(parameters))? JSON.getString(parameters, SepiaSocketClient.PARAMETERS_DEVICE_ID) : null); 
 				if (Is.nullOrEmpty(deviceId)){
@@ -86,6 +87,9 @@ public class SepiaAuthenticationHandler implements ServerMessageHandler {
 				//CREATE and STORE SocketUser
 				String acceptedName = userAccount.getUserNameShort();
 				SocketUser participant = new SocketUser(userSession, userId, acceptedName, role, deviceId);
+				if (clientInfo != null){
+					participant.setInfo("clientInfo", clientInfo);
+				}
 				//participant.setDeviceId(deviceId);
 				server.storeUser(participant);
 				participant.setAuthenticated();
@@ -143,15 +147,37 @@ public class SepiaAuthenticationHandler implements ServerMessageHandler {
 			
 			//AUTH. FAIL
 			}else{
-				SocketMessage msgLoginError = SepiaSocketBroadcaster.makeServerStatusMessage(
-						msg.msgId, "<auto>", "Login failed, credentials wrong or assistant not reachable", DataType.errorMessage, false
-				);
+				int authErrorCode = userAccount.getAuthErrorCode();
+				SocketMessage msgLoginError;
+				if (authErrorCode == 2){
+					//Server reached but login failed 
+					msgLoginError = SepiaSocketBroadcaster.makeServerStatusMessage(
+							msg.msgId, "<auto>", "Login failed, credentials wrong or token expired (401)", DataType.errorMessage, false
+					);
+					msgLoginError.addData("errorType", SocketMessage.ErrorType.authentication.name());
+					msgLoginError.addData("errorCode", 401);
+				}else if (authErrorCode == 10){
+					//Server reached but login temporarily blocked 
+					msgLoginError = SepiaSocketBroadcaster.makeServerStatusMessage(
+							msg.msgId, "<auto>", "Login temporarily blocked due to too many failed requests (429)", DataType.errorMessage, false
+					);
+					msgLoginError.addData("errorType", SocketMessage.ErrorType.authentication.name());
+					msgLoginError.addData("errorCode", 429);
+				}else{
+					//Other error
+					msgLoginError = SepiaSocketBroadcaster.makeServerStatusMessage(
+							msg.msgId, "<auto>", "Login failed, assistant not reachable or unknown error (500)", DataType.errorMessage, false
+					);
+					msgLoginError.addData("errorType", SocketMessage.ErrorType.authentication.name());
+					msgLoginError.addData("errorCode", 500);
+					msgLoginError.addData("returnCode", authErrorCode);
+				}
 				server.broadcastMessage(msgLoginError, userSession);
 			}
 		//AUTH. missing credentials to try
 		}else{
 			SocketMessage msgLoginError = SepiaSocketBroadcaster.makeServerStatusMessage(
-					msg.msgId, "<auto>", "Login failed, missing credentials", DataType.errorMessage, false
+					msg.msgId, "<auto>", "Login failed, missing credentials (401)", DataType.errorMessage, false
 			);
 			server.broadcastMessage(msgLoginError, userSession);
 		}

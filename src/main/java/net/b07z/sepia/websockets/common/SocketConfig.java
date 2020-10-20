@@ -28,7 +28,7 @@ public class SocketConfig {
 	public static final String SERVERNAME = "SEPIA-Websocket-Server"; 	//this is to identify the server (in client as well)
 	public static String localName = "sepia-websocket-server-1";		//**user defined local server name (works as server device ID as well)
 	public static String localSecret = "123456";						//**user defined secret to validate local server
-	public static final String apiVersion = "v1.3.0";
+	public static final String apiVersion = "v1.3.1";
 	public static String privacyPolicyLink = "";						//Link to privacy policy
 	
 	public static final boolean allowCORS = true;
@@ -53,6 +53,9 @@ public class SocketConfig {
 	public static final String authenticationModule = ConfigDefaults.defaultAuthModule;
 	public static String chatsDbModule = ChatsInMemoryDb.class.getCanonicalName();
 	public static String channelsDbModule = ChannelsInMemoryDb.class.getCanonicalName();
+	
+	//General server features
+	public static boolean useAlivePings = true;			//ping all clients from time to time to make sure they are alive
 	
 	//General chat settings
 	public static boolean distinguishUsersByDeviceId = true;		//allow 2 users with same ID to be active when device ID is different?
@@ -131,6 +134,8 @@ public class SocketConfig {
 			ConfigElasticSearch.endpoint_us1 = settings.getProperty("db_elastic_endpoint_us1");
 			ConfigElasticSearch.auth_type = settings.getProperty("db_elastic_auth_type", null);
 			ConfigElasticSearch.auth_data = settings.getProperty("db_elastic_auth_data", null);
+			//general features
+			useAlivePings = Boolean.parseBoolean(settings.getProperty("use_alive_pings", "true"));
 			//chat
 			maxChannelsPerUser = Integer.parseInt(settings.getProperty("max_channels_per_user", "10"));
 			storeMessagesPerChannel = Integer.parseInt(settings.getProperty("store_messages_per_channel", "0"));
@@ -170,6 +175,8 @@ public class SocketConfig {
 			config.setProperty("db_elastic_endpoint_custom", ConfigElasticSearch.endpoint_custom);
 			config.setProperty("db_elastic_endpoint_eu1", ConfigElasticSearch.endpoint_eu1);
 			config.setProperty("db_elastic_endpoint_us1", ConfigElasticSearch.endpoint_us1);
+			//general features
+			config.setProperty("use_alive_pings", String.valueOf(useAlivePings));
 			//chat
 			config.setProperty("max_channels_per_user", String.valueOf(maxChannelsPerUser));
 			config.setProperty("store_messages_per_channel", String.valueOf(storeMessagesPerChannel));

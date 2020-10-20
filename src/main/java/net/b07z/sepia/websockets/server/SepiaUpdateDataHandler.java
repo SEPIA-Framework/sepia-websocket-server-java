@@ -4,9 +4,11 @@ import java.util.Set;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.b07z.sepia.server.core.tools.Is;
 import net.b07z.sepia.server.core.tools.JSON;
 import net.b07z.sepia.websockets.common.SocketMessage;
 import net.b07z.sepia.websockets.common.SocketUser;
@@ -53,13 +55,41 @@ public class SepiaUpdateDataHandler implements ServerMessageHandler {
 		        );
 		        server.broadcastMessage(msgUpdateData, userSession);
 			}
+			
+		//userOrDeviceInfo
+		}else if (updateData.equals("userOrDeviceInfo")){
+			JSONObject data = JSON.getJObject(msg.data, "data");
+			if (data != null){
+				//we only store white-listed items - compare: 'SocketUser#getUserListEntry'
+				if (data.containsKey("deviceLocalSite")){
+					JSONObject dls = JSON.getJObject(data, "deviceLocalSite");
+					//optimize memory
+					if (Is.nullOrEmpty(JSON.getString(dls, "location"))){ 	//.location has to be set!
+						user.setInfo("deviceLocalSite", null);
+					}else{
+						user.setInfo("deviceLocalSite", dls);
+					}
+				}
+				if (data.containsKey("deviceGlobalLocation")){
+					JSONObject dgl = JSON.getJObject(data, "deviceGlobalLocation");
+					//optimize memory
+					if (Is.nullOrEmpty(JSON.getString(dgl, "latitude"))){	//.latitude and .longitude have to be set!
+						user.setInfo("deviceGlobalLocation", null);
+					}else{
+						user.setInfo("deviceGlobalLocation", dgl);
+					}
+				}
+			}
 		
 		//Unknown request
 		}else{
+			log.info("Unknown request: " + updateData);
 			//return error message
 	        SocketMessage errorMsg = SepiaSocketBroadcaster.makeServerStatusMessage(
 	        		"", "", "Error in updateData: unknown request", DataType.errorMessage, false
 	        );
+	        errorMsg.addData("errorType", SocketMessage.ErrorType.updateRequest.name());
+			errorMsg.addData("errorCode", 501);
 	        server.broadcastMessage(errorMsg, userSession);
 		}
 	}

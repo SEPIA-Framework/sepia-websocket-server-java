@@ -7,6 +7,8 @@ import org.json.simple.JSONObject;
 
 import net.b07z.sepia.server.core.data.Role;
 import net.b07z.sepia.server.core.tools.JSON;
+import net.b07z.sepia.websockets.server.SepiaClientPingHandler;
+import net.b07z.sepia.websockets.server.SepiaClientPingHandler.PingRequest;
 
 /**
  * User of the webSocketClient/Server
@@ -32,6 +34,8 @@ public class SocketUser {
 	
 	private boolean isActive = false;			//when a user connects he is inactive until he broadcasts his welcome. Users can also be deactivated if multiple same accounts are used.
 	private boolean isAuthenticated = false;	//a user can authenticate to use more services (e.g. assistant)
+	
+	private JSONObject info;			//all kinds of additional (dynamic) info - parts of it may be added to 'getUserListEntry'
 	
 	/**
 	 * Create a new "user" (can also be an assistant or IoT device) 
@@ -88,6 +92,25 @@ public class SocketUser {
 			"sessionId", sessionId
 		);
 		JSON.put(entry, "role", role.name());
+		if (info != null){
+			JSONObject infoJson = new JSONObject();
+			//use this white-list of added info
+			if (info.containsKey("clientInfo")){
+				JSON.put(infoJson, "clientInfo", info.get("clientInfo"));
+			}
+			if (info.containsKey("lastPing")){
+				JSON.put(infoJson, "lastPing", info.get("lastPing"));
+			}
+			if (info.containsKey("deviceLocalSite")){
+				JSON.put(infoJson, "deviceLocalSite", info.get("deviceLocalSite"));
+			}
+			if (info.containsKey("deviceGlobalLocation")){
+				JSON.put(infoJson, "deviceGlobalLocation", info.get("deviceGlobalLocation"));
+			}
+			if (!infoJson.isEmpty()){
+				JSON.put(entry, "info", infoJson);
+			}
+		}
 		return entry;
 	}
 	
@@ -140,4 +163,45 @@ public class SocketUser {
 		isAuthenticated = true;
 	}
 	
+	/**
+	 * Get some more info about user or client device.
+	 */
+	public JSONObject getInfo(){
+		return info;
+	}
+	/**
+	 * Get a specific field from user or client device info.
+	 */
+	public Object getInfoEntryOrNull(String key){
+		if (info != null){
+			return info.get(key);
+		}else{
+			return null;
+		}
+	}
+	/**
+	 * Set a specific field of the user or client device info.
+	 */
+	public void setInfo(String key, Object value){
+		if (info == null) info = new JSONObject();
+		JSON.put(info, key, value);
+	}
+	
+	//--- stuff called after authentication or close ---
+	
+	public void closeAllActivities(){
+		//cancel alive-ping request if any
+		PingRequest pr = (PingRequest) getInfoEntryOrNull("nextPingRequest");
+		if (pr != null){
+			pr.cancelScheduledPing();
+		}
+	}
+	
+	public void registerActivities(){
+		//start alive-ping requests
+		if (SocketConfig.useAlivePings && userSession != null && userSession.isOpen()){
+			//the first ping is sent directly to test if the client supports the feature
+			SepiaClientPingHandler.scheduleNextUserPing(userSession, 15000);
+		}
+	}
 }

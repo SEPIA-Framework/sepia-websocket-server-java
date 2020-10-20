@@ -1,6 +1,7 @@
 package net.b07z.sepia.websockets.server;
 import static spark.Spark.*;
 
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Map;
 
@@ -8,17 +9,24 @@ import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.b07z.sepia.server.core.data.Role;
 import net.b07z.sepia.server.core.endpoints.CoreEndpoints;
 import net.b07z.sepia.server.core.server.ConfigDefaults;
+import net.b07z.sepia.server.core.server.RequestGetOrFormParameters;
+import net.b07z.sepia.server.core.server.RequestParameters;
 import net.b07z.sepia.server.core.server.SparkJavaFw;
 import net.b07z.sepia.server.core.tools.DateTime;
 import net.b07z.sepia.server.core.tools.Debugger;
 import net.b07z.sepia.server.core.tools.JSON;
 import net.b07z.sepia.server.core.tools.Timer;
+import net.b07z.sepia.server.core.users.Account;
 import net.b07z.sepia.websockets.common.SocketChannel;
 import net.b07z.sepia.websockets.common.SocketConfig;
 import net.b07z.sepia.websockets.database.ChannelsDatabase;
 import net.b07z.sepia.websockets.endpoints.ChannelManager;
+import net.b07z.sepia.websockets.endpoints.ClientManager;
+import spark.Request;
+import spark.Response;
 
 public class StartWebSocketServer {
 	
@@ -152,19 +160,21 @@ public class StartWebSocketServer {
 		get("/ping", (request, response) -> 			CoreEndpoints.ping(request, response, SocketConfig.SERVERNAME));
 		get("/validate", (request, response) -> 		CoreEndpoints.validateServer(request, response,	SocketConfig.SERVERNAME, 
 															SocketConfig.apiVersion, SocketConfig.localName, SocketConfig.localSecret));
+		post("/hello", StartWebSocketServer::helloWorld);
+		
         post("/createChannel", (request, response) -> 	ChannelManager.createChannel(request, response));
         post("/joinChannel", (request, response) -> 	ChannelManager.joinChannel(request, response));
         post("/deleteChannel", (request, response) -> 	ChannelManager.deleteChannel(request, response));
         post("/getAvailableChannels", (request, response) -> 	ChannelManager.getAvailableChannels(request, response));
         post("/getChannelHistoryStatistic", (request, response) -> 	ChannelManager.getChannelHistoryStatistic(request, response));
         post("/removeOutdatedChannelMessages", (request, response) -> 	ChannelManager.removeOutdatedChannelMessages(request, response));
-        //TODO:
-        //getChannel, getChannelData
+        //TODO: getChannel, getChannelData
+        
+        post("/getOwnClientConnections", (request, response) -> 	ClientManager.getClientConnections(request, response));
         
         //usually requested via socket connection:
         post("/getChannelsWithMissedMessages", (request, response) -> 	ChannelManager.getChannelsWithMissedMessages(request, response));
-        
-        
+                
         //set access-control headers to enable CORS
 		if (SocketConfig.allowCORS){
 			SparkJavaFw.enableCORS("*", "*", "*");
@@ -174,10 +184,48 @@ public class StartWebSocketServer {
         
         createDefaultChannels();
         
-        Debugger.println(DateTime.getLogDate() + " Welcome to the SEPIA webSocket server - port: " + SocketConfig.PORT, 3);
+        Debugger.println("Welcome to the SEPIA Chat-Server " + SocketConfig.apiVersion + " (" + serverType + ") - port: " + SocketConfig.PORT, 3);
+		startGMT = DateTime.getGMT(new Date(), "dd.MM.yyyy' - 'HH:mm:ss' - GMT'");
+		Debugger.println("Date: " + startGMT, 3);
         
         SparkJavaFw.handleError();
         
 		Debugger.println("Initialization complete, lets go!", 3);
     }
+	
+	//hello and statistics end-point
+	private static String helloWorld(Request request, Response response){
+		//time now
+		Date date = new Date();
+		String nowGMT = DateTime.getGMT(date, "dd.MM.yyyy' - 'HH:mm:ss' - GMT'");
+		
+		//get parameters (or throw error) - NOTE: historically this is a bit inconsistent with the other APIs
+		RequestParameters params = new RequestGetOrFormParameters(request);
+    	
+    	//authenticate
+    	Account userAccount = new Account();
+		if (userAccount.authenticate(params)){
+			String reply;
+			if (userAccount.hasRole(Role.developer.name())){
+				//stats
+				reply = "Hello World!"
+						+ "<br><br>"
+						+ "Stats:<br>" +
+								"<br>api: " + SocketConfig.apiVersion +
+								"<br>started: " + startGMT +
+								"<br>now: " + nowGMT +
+								"<br>host: " + request.host() +
+								"<br>url: " + request.url() + "<br><br>" +
+								Statistics.getInfo();
+			}else{
+				reply = "Hello World!";
+			}
+			JSONObject msg = JSON.make("result", "success", "reply", reply);
+			return SparkJavaFw.returnResult(request, response, msg.toJSONString(), 200);
+		}else{
+			//refuse
+			JSONObject msgJSON = JSON.make("result", "fail", "error", "not authorized");
+			return SparkJavaFw.returnResult(request, response, msgJSON.toJSONString(), 403);
+		}
+	}
 }
