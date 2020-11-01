@@ -3,7 +3,7 @@
   	
   	<groupId>net.b07z.sepia.websockets</groupId>
   	<artifactId>sepia-websockets</artifactId>
-  	<version>1.3.1</version>
+  	<version>1.3.2</version>
   	<name>SEPIA webSocket server and client</name>
   	<description>WebSockets server and client to offer messages (chat and data) in SEPIA</description>
   
