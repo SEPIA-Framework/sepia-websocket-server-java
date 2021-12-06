@@ -2,6 +2,7 @@ package net.b07z.sepia.websockets.server;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jetty.websocket.api.Session;
@@ -17,6 +18,7 @@ import net.b07z.sepia.server.core.server.RequestPostParameters;
 import net.b07z.sepia.server.core.tools.Is;
 import net.b07z.sepia.server.core.tools.JSON;
 import net.b07z.sepia.server.core.users.Account;
+import net.b07z.sepia.server.core.users.SharedAccessItem;
 import net.b07z.sepia.websockets.client.SepiaSocketClient;
 import net.b07z.sepia.websockets.common.SocketChannel;
 import net.b07z.sepia.websockets.common.SocketConfig;
@@ -81,6 +83,7 @@ public class SepiaAuthenticationHandler implements ServerMessageHandler {
 				}else{
 					role = Role.user;
 				}
+				Map<String, List<SharedAccessItem>> sharedAccess = userAccount.getSharedAccess();
 				log.info("Authenticated: " + userId + ", roles: " + userAccount.getUserRoles() + ", deviceId: " + deviceId); 		//debug
 				//System.out.println("Parameters: " + parameters); 		//debug
 				
@@ -91,6 +94,9 @@ public class SepiaAuthenticationHandler implements ServerMessageHandler {
 					participant.setInfo("clientInfo", clientInfo);
 				}
 				//participant.setDeviceId(deviceId);
+				if (sharedAccess != null){
+					participant.setSharedAccess(sharedAccess);
+				}
 				server.storeUser(participant);
 				participant.setAuthenticated();
 				

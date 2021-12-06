@@ -50,7 +50,7 @@ public class ClientManager {
 					//get clients
 					Collection<SocketUser> users = SocketUserPool.getAllUsers();
 					JSONArray result = new JSONArray();
-					
+
 					//check users
 					if (Is.notNullOrEmpty(users)){
 						if (getAll){
@@ -64,6 +64,8 @@ public class ClientManager {
 							}
 						}else{
 							//Single user
+							boolean includeShared = params.getBoolOrDefault("includeShared", false);
+							//TODO: use more detailed filter: params.getBoolOrDefault("includeSharedFor", false);
 							for (SocketUser u : users){
 								if (userId.equals(u.getUserId())){
 									//check session
@@ -71,6 +73,21 @@ public class ClientManager {
 									if (s != null && s.isOpen()){
 										JSON.add(result, u.getUserListEntry());
 									}
+								}else if (includeShared && u.getSharedAccess() != null){
+									//iterate through all shared permissions and find matching user
+									//NOTE: with finer filter we can use specific key (dataType) instead ...
+									u.getSharedAccess().entrySet().forEach(es -> {
+										es.getValue().forEach(sharedAccessItem -> {
+											//user we are looking for?
+											if (sharedAccessItem.getUser().equals(userId)){
+												//TODO: filter device and details?
+												JSONObject userJsonReduced = u.getReducedListEntry();
+												JSON.put(userJsonReduced, "isShared", true);
+												JSON.put(userJsonReduced, "sharedAccessInfo", sharedAccessItem.toJson());
+												JSON.add(result, userJsonReduced);
+											}
+										});
+									});
 								}
 							}
 						}

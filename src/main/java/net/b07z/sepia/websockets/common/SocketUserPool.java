@@ -46,7 +46,7 @@ public class SocketUserPool {
 		pendingSession.put(session, JSON.make("pendingSince", System.currentTimeMillis()));
 	}
 	/**
-	 * Remove user session from pending session pool (because he got authenticated or left). 
+	 * Remove user session from pending session pool (because user was authenticated or left). 
 	 * @param session
 	 */
 	public static void removePendingSession(Session session){
