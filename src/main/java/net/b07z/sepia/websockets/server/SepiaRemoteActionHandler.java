@@ -38,7 +38,7 @@ public class SepiaRemoteActionHandler implements ServerMessageHandler {
 	@Override
 	public void handle(Session userSession, SocketMessage msg) throws Exception {
 		//NOTE: IF this was HTTP action the userSession is the session of the assistant NOT the user since it is the mediator between the REST API and socket message.
-		//TODO: handle direct WebSocket message to shared access user device
+		//TODO: handle direct WebSocket message to shared-access user device
 		//Remote actions can be sent to the user who triggered them or to users that explicitly allow other users to send them.
 		List<SocketUser> users = findRemoteTargetSocketUsers(msg);
 		if (users == null || users.isEmpty()){
