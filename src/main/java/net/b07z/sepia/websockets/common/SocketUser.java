@@ -14,7 +14,7 @@ import net.b07z.sepia.websockets.server.SepiaClientPingHandler;
 import net.b07z.sepia.websockets.server.SepiaClientPingHandler.PingRequest;
 
 /**
- * User of the webSocketClient/Server
+ * User of the webSocketClient/Server. It's a unique combination of 'userId', 'deviceId' and 'userSession'.
  * 
  * @author Florian Quirin
  *
@@ -31,12 +31,13 @@ public class SocketUser {
 	
 	private String deviceId = "";		//device id to distinguish between same accounts on different devices
 	private long sessionId = 0; 		//random id to distinguish between same accounts in general
-	
+		
 	private String activeChannelId;		//currently a user can only be active in one channel at the same time
 	private boolean isOmnipresent = false;		//a user can be active in all channels at the same time
 	
 	private boolean isActive = false;			//when a user connects he is inactive until he broadcasts his welcome. Users can also be deactivated if multiple same accounts are used.
 	private boolean isAuthenticated = false;	//a user can authenticate to use more services (e.g. assistant)
+	private boolean isClosing = false;			//session.close() is async., set this to prevent messages to closing sessions
 	
 	private Map<String, List<SharedAccessItem>> sharedAccess;		//shared access permissions
 	
@@ -189,6 +190,13 @@ public class SocketUser {
 	}
 	public void setAuthenticated(){
 		isAuthenticated = true;
+	}
+	
+	public boolean isClosing(){
+		return isClosing;
+	}
+	public void setClosing(){
+		isClosing = true;
 	}
 	
 	public void setSharedAccess(Map<String, List<SharedAccessItem>> sharedAccessMap){

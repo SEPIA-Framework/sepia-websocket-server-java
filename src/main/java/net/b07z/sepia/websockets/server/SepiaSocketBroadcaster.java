@@ -277,7 +277,7 @@ public class SepiaSocketBroadcaster {
     		for (SocketUser su : userList){
     			//System.out.println("(1) Broadcast from " + msg.sender + " to " + su.getUserId() + " with role " + su.getUserRole());	//debug
     			//is user-session still open?
-    			if (!su.getUserSession().isOpen()){
+    			if (!su.getUserSession().isOpen() || su.isClosing()){
     				SocketUserPool.removeUser(su);
     			}else{
     				//make message safe if receiver is not trusty

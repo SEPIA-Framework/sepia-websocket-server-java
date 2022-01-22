@@ -129,7 +129,7 @@ public class SocketUserPool {
 	}
 
 	/**
-	 * Get all users in user pool.
+	 * Get all users (userId + deviceId + session) in user pool.
 	 */
 	public static Collection<SocketUser> getAllUsers(){
 		return userPool.values(); 		//TODO: iterations over this result are not thread-safe (I guess)

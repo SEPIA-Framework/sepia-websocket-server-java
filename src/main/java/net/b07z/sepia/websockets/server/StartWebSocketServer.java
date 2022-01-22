@@ -171,6 +171,7 @@ public class StartWebSocketServer {
         //TODO: getChannel, getChannelData
         
         post("/getOwnClientConnections", (request, response) -> 	ClientManager.getClientConnections(request, response));
+        post("/refreshClientConnections", (request, response) -> 	ClientManager.refreshClientConnections(request, response));
         
         //usually requested via socket connection:
         post("/getChannelsWithMissedMessages", (request, response) -> 	ChannelManager.getChannelsWithMissedMessages(request, response));
