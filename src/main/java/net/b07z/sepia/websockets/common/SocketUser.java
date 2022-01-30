@@ -1,5 +1,7 @@
 package net.b07z.sepia.websockets.common;
 
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.websocket.api.Session;
@@ -7,11 +9,12 @@ import org.json.simple.JSONObject;
 
 import net.b07z.sepia.server.core.data.Role;
 import net.b07z.sepia.server.core.tools.JSON;
+import net.b07z.sepia.server.core.users.SharedAccessItem;
 import net.b07z.sepia.websockets.server.SepiaClientPingHandler;
 import net.b07z.sepia.websockets.server.SepiaClientPingHandler.PingRequest;
 
 /**
- * User of the webSocketClient/Server
+ * User of the webSocketClient/Server. It's a unique combination of 'userId', 'deviceId' and 'userSession'.
  * 
  * @author Florian Quirin
  *
@@ -28,12 +31,15 @@ public class SocketUser {
 	
 	private String deviceId = "";		//device id to distinguish between same accounts on different devices
 	private long sessionId = 0; 		//random id to distinguish between same accounts in general
-	
+		
 	private String activeChannelId;		//currently a user can only be active in one channel at the same time
 	private boolean isOmnipresent = false;		//a user can be active in all channels at the same time
 	
 	private boolean isActive = false;			//when a user connects he is inactive until he broadcasts his welcome. Users can also be deactivated if multiple same accounts are used.
 	private boolean isAuthenticated = false;	//a user can authenticate to use more services (e.g. assistant)
+	private boolean isClosing = false;			//session.close() is async., set this to prevent messages to closing sessions
+	
+	private Map<String, List<SharedAccessItem>> sharedAccess;		//shared access permissions
 	
 	private JSONObject info;			//all kinds of additional (dynamic) info - parts of it may be added to 'getUserListEntry'
 	
@@ -111,6 +117,29 @@ public class SocketUser {
 				JSON.put(entry, "info", infoJson);
 			}
 		}
+		//TODO: add sharedAccess?
+		return entry;
+	}
+	
+	/**
+	 * Get reduced data e.g. for shared-access list info.
+	 */
+	public JSONObject getReducedListEntry(){
+		JSONObject entry = JSON.make(
+			"name", userName, 
+			"id", userId,
+			"isActive", isActive,
+			"deviceId", deviceId
+		);
+		if (info != null){
+			JSONObject infoJson = new JSONObject();
+			if (info.containsKey("deviceLocalSite")){
+				JSON.put(infoJson, "deviceLocalSite", info.get("deviceLocalSite"));
+			}
+			if (!infoJson.isEmpty()){
+				JSON.put(entry, "info", infoJson);
+			}
+		}
 		return entry;
 	}
 	
@@ -163,6 +192,20 @@ public class SocketUser {
 		isAuthenticated = true;
 	}
 	
+	public boolean isClosing(){
+		return isClosing;
+	}
+	public void setClosing(){
+		isClosing = true;
+	}
+	
+	public void setSharedAccess(Map<String, List<SharedAccessItem>> sharedAccessMap){
+		sharedAccess = sharedAccessMap;
+	}
+	public Map<String, List<SharedAccessItem>> getSharedAccess(){
+		return sharedAccess;
+	}
+		
 	/**
 	 * Get some more info about user or client device.
 	 */

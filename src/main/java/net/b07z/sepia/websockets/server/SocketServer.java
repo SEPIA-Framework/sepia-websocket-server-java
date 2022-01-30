@@ -43,8 +43,14 @@ public interface SocketServer {
      */
 	public String makeUserName();
     
+	/**
+	 * Remember user and its session (usually after authentication).
+	 */
     public void storeUser(SocketUser socketUser);
     
+    /**
+     * Remove user session (usually after connection close).
+     */
     public void removeUser(SocketUser socketUser);
     
     public Collection<SocketUser> getAllUsers();

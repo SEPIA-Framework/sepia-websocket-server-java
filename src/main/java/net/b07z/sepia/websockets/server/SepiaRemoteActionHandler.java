@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.b07z.sepia.server.core.tools.Is;
+import net.b07z.sepia.server.core.tools.JSON;
 import net.b07z.sepia.websockets.common.SocketMessage;
 import net.b07z.sepia.websockets.common.SocketUser;
 import net.b07z.sepia.websockets.common.SocketUserPool;
@@ -36,8 +37,9 @@ public class SepiaRemoteActionHandler implements ServerMessageHandler {
 
 	@Override
 	public void handle(Session userSession, SocketMessage msg) throws Exception {
-		//NOTE: userSession is the session of the assistant NOT the user since it is the mediator between the REST API and socket message
-		//Currently remote actions can only be sent to the user who triggered them
+		//NOTE: IF this was HTTP action the userSession is the session of the assistant NOT the user since it is the mediator between the REST API and socket message.
+		//TODO: handle direct WebSocket message to shared-access user device
+		//Remote actions can be sent to the user who triggered them or to users that explicitly allow other users to send them.
 		List<SocketUser> users = findRemoteTargetSocketUsers(msg);
 		if (users == null || users.isEmpty()){
 			//log.info("SepiaRemoteActionHandler: Could not find target user. Message will not be sent."); 		//debug
@@ -64,6 +66,11 @@ public class SepiaRemoteActionHandler implements ServerMessageHandler {
 			remoteMsg.addData("user", receiver);
 			remoteMsg.addData("type", remoteMsgType);
 			remoteMsg.addData("action", action);
+			
+			String originalSender = JSON.getStringOrDefault(msg.data, "originalSender", null);
+			if (originalSender != null){
+				remoteMsg.addData("originalSender", originalSender);
+			}
 			
 			//broadcast to target user session
 	        server.broadcastMessage(remoteMsg, user.getUserSession());
