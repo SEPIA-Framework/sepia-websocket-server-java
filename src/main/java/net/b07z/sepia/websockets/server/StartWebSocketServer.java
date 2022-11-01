@@ -143,6 +143,15 @@ public class StartWebSocketServer {
 
     //MAIN
 	public static void main(String[] args) {
+		
+		System.out.println("-----------------------------------------");
+		System.out.println("      ___    ___   ___   ___   ___       ");
+		System.out.println("     |___   |___  |___]   |   |___|      ");
+		System.out.println("     ____|. |___. |    . _|_. |   |.     ");
+		System.out.println("                                         ");
+		System.out.println("    https://sepia-framework.github.io    ");
+		System.out.println("                                         ");
+		
     	//load settings
     	loadSettings(args);
         
